@@ -1,0 +1,31 @@
+name: Lead saw
+numvoices: 1
+units:
+  - type: oscillator
+    id: 18
+    parameters: {attack: 64, color: 128, decay: 64, detune: 64, gain: 5, lfo: 1, phase: 0, release: 64, shape: 64, stereo: 0, sustain: 64, transpose: 80, type: 0}
+  - type: send
+    id: 19
+    parameters: {amount: 62, color: 64, detune: 64, gain: 64, phase: 0, port: 0, sendpop: 1, shape: 64, stereo: 0, target: 2, transpose: 64, type: 0, unit: 0, voice: 0}
+  - type: oscillator
+    id: 2
+    parameters: {color: 128, detune: 64, gain: 64, phase: 0, shape: 128, stereo: 0, transpose: 64, type: 0, unison: 0}
+  - type: envelope
+    id: 1
+    parameters: {attack: 0, damp: 0, decay: 66, dry: 128, feedback: 96, gain: 64, notetracking: 2, pregain: 40, release: 71, stereo: 0, sustain: 64}
+  - type: mulp
+    id: 3
+    parameters: {panning: 64, stereo: 0}
+  - type: delay
+    id: 11
+    parameters: {auxgain: 64, damp: 114, dry: 128, feedback: 128, notetracking: 0, outgain: 64, pregain: 22, stereo: 0}
+    varargs: [1116, 1188, 1276, 1356, 1422, 1492, 1556, 1618]
+  - type: pan
+    id: 5
+    parameters: {panning: 64, stereo: 0}
+  - type: filter
+    id: 13
+    parameters: {bandpass: 0, frequency: 108, highpass: 0, lowpass: 1, negbandpass: 0, neghighpass: 0, resonance: 73, stereo: 1}
+  - type: outaux
+    id: 6
+    parameters: {auxgain: 64, outgain: 64, stereo: 1}
