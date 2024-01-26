@@ -7,3 +7,6 @@ __pycache__/
 
 db/*
 !db/.gitkeep
+
+server/public/*
+!server/public/.gitkeep
