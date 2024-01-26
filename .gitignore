@@ -10,3 +10,6 @@ db/*
 
 server/public/*
 !server/public/.gitkeep
+
+wav/*
+!wav/.gitkeep
