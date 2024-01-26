@@ -2,9 +2,9 @@
 name = "satunnaisia-dissonansseja"
 version = "0.1.0"
 description = ""
-authors = ["qm210 <quantenmace@gmail.com>"]
+authors = ["qm210 <quantenmace@gmail.com>", "nr4 <nr4@z10.info>"]
 readme = "README.md"
-packages = [{include = "satunnaisia_dissonansseja", from = "server"}]
+packages = []
 
 [tool.poetry.dependencies]
 python = "^3.11"
