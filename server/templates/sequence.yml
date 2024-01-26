@@ -1,0 +1,19 @@
+bpm: 100
+rowsperbeat: 4
+score:
+    tracks:
+        - numvoices: 1
+          order: [0]
+          patterns: [[54, 0]]
+    rowsperpattern: 16
+    length: 1
+patch:
+    - name: Global
+      numvoices: 1
+      units:
+        - type: in
+          id: 7
+          parameters: {channel: 2, gain: 128, stereo: 1}
+        - type: out
+          id: 9
+          parameters: {gain: 128, stereo: 1}
