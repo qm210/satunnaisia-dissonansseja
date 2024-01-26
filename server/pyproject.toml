@@ -1,0 +1,16 @@
+[tool.poetry]
+name = "satunnaisia-dissonansseja"
+version = "0.1.0"
+description = ""
+authors = ["qm210 <quantenmace@gmail.com>"]
+readme = "README.md"
+packages = [{include = "satunnaisia_dissonansseja", from = "src"}]
+
+[tool.poetry.dependencies]
+python = "^3.11"
+flask = "^3.0.1"
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
