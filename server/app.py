@@ -1,7 +1,10 @@
 from flask import Flask
 
+from server.db import init_database
+
 app = Flask(__name__)
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:////'
+
+db = init_database(app, "db.sqlite3")
 
 
 @app.route('/')
