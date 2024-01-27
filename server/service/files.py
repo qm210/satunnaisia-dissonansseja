@@ -3,7 +3,6 @@ from pathlib import Path
 
 
 class FilesService:
-
     wav_folder: string = "wav"
 
     def __init__(self, app, db, **kwargs):
@@ -23,7 +22,7 @@ class FilesService:
                 if len(file.parts) > 1 else ""
             file_info = {
                 'path': str(item),
-                'name': str(file.parts[-1]),
+                'name': str(file.parts[-1].split(".")[0]),
                 'tag': tag
             }
             if tag not in result:
