@@ -21,7 +21,7 @@ class FilesService:
             tag = '/'.join(file.parts[:-1]) \
                 if len(file.parts) > 1 else ""
             file_info = {
-                'path': str(item),
+                'path': item.as_posix(),
                 'name': str(file.parts[-1].split(".")[0]),
                 'tag': tag
             }

@@ -92,8 +92,3 @@ button:focus-visible {
     background: #eef;
     z-index: 1;
 }
-
-#files {
-    flex-grow: 1;
-    overflow: auto;
-}
