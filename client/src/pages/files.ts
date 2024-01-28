@@ -1,7 +1,16 @@
-import FilesListMenu from "../components/filesMenu.ts";
+import { Menu } from "../components/menu.ts";
 
-export default () => `
-    ${FilesListMenu()}
+export default () =>
+    Menu({
+        left: [{
+            label: "Do Stuff"
+        }],
+        right: [{
+            label: "Save"
+        }, {
+            label: "Discard"
+        }]
+    }) + `
     <div
         x-data="
             {data: [], isLoading: true}
@@ -10,7 +19,7 @@ export default () => `
             fetchJson('/api/all')
             .then(res => {data = res; isLoading = false;})
             "
-        class="p-4"
+        class="m-2"
         style="flex-grow: 1; overflow: auto;"
         >
         <h3 x-show="isLoading">
@@ -23,11 +32,9 @@ export default () => `
                 <td
                     x-text="taggedGroup.tag || 'UNTAGGED'"
                     class="sticky left-0 p-2 text-left bg-white truncate"
-                    id="firstColumn"
                 />
                 <td
                     class="sticky left-24 bg-white"
-                    id="secondColumn"
                     >
                     <button class="p-2">
                         <play-icon/>
