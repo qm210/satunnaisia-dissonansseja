@@ -38,7 +38,7 @@ root.innerHTML = `
  
     <div
         x-data="defaultRouter"
-        class="flex flex-col w-full h-full" 
+        class="w-full h-full"
     >
         <template x-route="/">
             <div class="contents">
