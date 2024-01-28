@@ -34,7 +34,10 @@ export default () => WithMenu({
                     <td
                         class="sticky left-24 bg-white"
                         >
-                        <button class="p-2">
+                        <button
+                            @click="alert('play-multiple-wav is not implemented yet.')"
+                            class="p-2"
+                        >
                             <play-icon/>
                         </button>
                     </td>

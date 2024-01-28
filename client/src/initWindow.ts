@@ -50,13 +50,17 @@ export const initWindow = (alpine: typeof Alpine) => {
         const response = await fetch(url);
         const data = await response.blob();
         const player = getAudioPlayer();
-        player.src = URL.createObjectURL(data);
-
-        return new Promise((resolve) => {
-            player.addEventListener("loadedmetadata", () => {
-                resolve(player);
-            });
+        const loadReader = new Promise((resolve) => {
+            const reader = new FileReader();
+            reader.onload = resolve;
+            reader.readAsDataURL(data);
         });
+        const loadMetaData = new Promise((resolve) => {
+            player.src = URL.createObjectURL(data);
+            player.addEventListener("loadedmetadata", resolve);
+        });
+        await Promise.all([loadReader, loadMetaData]);
+        return player;
     };
 };
 

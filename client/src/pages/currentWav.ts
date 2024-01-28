@@ -22,11 +22,11 @@ export default () =>
                 "
                 class="text-xl flex flex-col items-center justify-center h-full"
             >
-                <div x-text="$router.params.file" class="m-2"></div>
+                <div x-text="$router.params.file" class="mt-4"></div>
                 <div x-show="audioPlayer !== null" class="flex-grow flex flex-col justify-center h-full gap-4">
                     <div class="border border-black p-2">
                         <div>
-                            Duration: <span x-text="audioPlayer.duration + ' sec'"></span> 
+                            Duration: <span x-text="audioPlayer?.duration + ' sec'"></span> 
                         </div>
                         <button
                             @click="audioPlayer.play()"
