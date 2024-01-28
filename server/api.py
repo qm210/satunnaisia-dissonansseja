@@ -1,4 +1,4 @@
-from flask import current_app, Blueprint, send_file
+from flask import g, current_app, Blueprint, send_file, abort
 
 api = Blueprint('api', __name__)
 
@@ -11,10 +11,12 @@ def some_bullshit_but_glad_that_i_am_alive():
 
 @api.route('/all', methods=['GET'])
 def all_waves():
-    return current_app.files_service.get_all_wavs()
+    return g.files_service.get_all_wavs()
 
 
-@api.route('/wav/<path:path>', methods=['GET'])
-def play_single_wave(path):
-    current_app.logger.info(f"loggedilogg {path}")
+@api.route('/wav/<path:file>', methods=['GET'])
+def play_single_wave(file):
+    path = g.files_service.get_single_wav_path(file)
+    if path is None:
+        abort(404)
     return send_file(path, mimetype='audio/wav')

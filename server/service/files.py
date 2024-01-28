@@ -1,9 +1,10 @@
 import string
 from pathlib import Path
+from typing import Optional
 
 
 class FilesService:
-    wav_folder: string = "wav"
+    wav_folder: string = "./wav"
 
     def __init__(self, app, db, **kwargs):
         # this should only hold constant configuration information
@@ -17,7 +18,6 @@ class FilesService:
         result = {}
         for item in folder.glob("**/*.wav"):
             file = item.relative_to(folder)
-            self.app.logger.debug(f"Subfolder: {file.parts}, {file.parts[-1]} / {file.parts[0]}")
             tag = '/'.join(file.parts[:-1]) \
                 if len(file.parts) > 1 else ""
             file_info = {
@@ -33,3 +33,7 @@ class FilesService:
             lambda t: {'tag': t[0], 'files': t[1]},
             result.items()
         ))
+
+    def get_single_wav_path(self, file: string) -> Optional[string]:
+        result = Path(self.wav_folder) / Path(file)
+        return result.resolve() if result.exists() else None
