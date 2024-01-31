@@ -10,21 +10,36 @@ export default () =>
         content: `
             <div
                 x-data="
-                    {audioPlayer: null, isLoading: true}
+                    {audioPlayer: null, isLoading: true, notFound: false}
                 "
                 x-init="
                     fetchIntoAudioPlayer('/api/wav/' + $router.params.file)
                     .then(player => {
-                        isLoading = false;
                         audioPlayer = player;
                         audioPlayer.play();
                     })
-                    .catch(console.warn);
+                    .catch((err) => {
+                        if (err.status === 404) {
+                            notFound = true;
+                        }
+                    })
+                    .finally(() => {
+                        isLoading = false;
+                    });
                 "
                 class="text-xl flex flex-col items-center justify-center h-full"
             >
                 <div x-text="$router.params.file" class="mt-4"></div>
-                <div x-show="audioPlayer !== null" class="flex-grow flex flex-col justify-center h-full gap-3s">
+                <div
+                    x-show="notFound" class="flex-grow flex flex-col justify-center h-full gap-4"
+                    @click="window.location.href='/'"                
+                >
+                    <ban-icon size="6rem" color="red"></ban-icon>
+                    <div>
+                        404 Not Found
+                    </div>
+                </div>
+                <div x-show="audioPlayer !== null" class="flex-grow flex flex-col justify-center h-full gap-2">
                     <div class="border border-black">
                         <div class="text-xs m-1">
                             Duration: <span x-text="audioPlayer?.duration + ' sec'"></span> 
@@ -66,9 +81,6 @@ export default () =>
                                 Equals Bubu
                             </span>
                         </div>
-                    </div>
-                    <div class="hidden border border-black w-full" @click="alert('nyi');">
-                        ... Revoke? ...
                     </div>
                 </div>
             </div>

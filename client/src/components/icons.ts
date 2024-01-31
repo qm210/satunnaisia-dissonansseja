@@ -1,6 +1,12 @@
+// see:
+// https://heroicons.com/
+// <!--!Font Awesome Free 6.5.1 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free Copyright 2024 Fonticons, Inc.-->
+
+
 const addSvgPathAsShadow = (element: HTMLElement, { children, viewBox }: { children: string, viewBox: string }) => {
     const shadow = element.attachShadow({ mode: "open" });
     const size = element.getAttribute("size") || 24;
+    const color = element.getAttribute("color") || "currentColor";
     viewBox ||= `0 0 ${size} ${size}`;
     children ||= "<slot></slot>";
     shadow.innerHTML = `
@@ -9,7 +15,7 @@ const addSvgPathAsShadow = (element: HTMLElement, { children, viewBox }: { child
                 width="${size}"
                 height="${size}"
                 viewBox="${viewBox}"
-                fill="currentColor"
+                fill="${color}"
             >
                 ${children}
             </svg>
@@ -19,7 +25,6 @@ const addSvgPathAsShadow = (element: HTMLElement, { children, viewBox }: { child
 export class PlayIcon extends HTMLElement {
     static observedAttributes = ["size"];
 
-    // see https://heroicons.com/
     connectedCallback() {
         addSvgPathAsShadow(this, {
             viewBox: "0 0 24 24",
@@ -33,7 +38,6 @@ export class PlayIcon extends HTMLElement {
 }
 
 export class HeartIcon extends HTMLElement {
-    // <!--!Font Awesome Free 6.5.1 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free Copyright 2024 Fonticons, Inc.-->
     connectedCallback() {
         addSvgPathAsShadow(this, {
             viewBox: "0 0 512 512",
@@ -43,7 +47,6 @@ export class HeartIcon extends HTMLElement {
 }
 
 export class LameIcon extends HTMLElement {
-    // <!--!Font Awesome Free 6.5.1 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free Copyright 2024 Fonticons, Inc.-->
     connectedCallback() {
         addSvgPathAsShadow(this, {
             viewBox: "0 0 512 512",
@@ -53,11 +56,19 @@ export class LameIcon extends HTMLElement {
 }
 
 export class PoopIcon extends HTMLElement {
-    // <!--!Font Awesome Free 6.5.1 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free Copyright 2024 Fonticons, Inc.-->
     connectedCallback() {
         addSvgPathAsShadow(this, {
             viewBox: "0 0 512 512",
             children: "<path d=\"M451.4 369.1C468.7 356 480 335.4 480 312c0-39.8-32.2-72-72-72h-14.1c13.4-11.7 22.1-28.8 22.1-48 0-35.4-28.7-64-64-64h-5.9c3.6-10.1 5.9-20.7 5.9-32 0-53-43-96-96-96-5.2 0-10.2 .7-15.1 1.5C250.3 14.6 256 30.6 256 48c0 44.2-35.8 80-80 80h-16c-35.4 0-64 28.7-64 64 0 19.2 8.7 36.3 22.1 48H104c-39.8 0-72 32.2-72 72 0 23.4 11.3 44 28.6 57.1C26.3 374.6 0 404.1 0 440c0 39.8 32.2 72 72 72h368c39.8 0 72-32.2 72-72 0-35.9-26.3-65.4-60.6-70.9z\"/>"
+        });
+    }
+}
+
+export class BanIcon extends HTMLElement {
+    connectedCallback() {
+        addSvgPathAsShadow(this, {
+            viewBox: "0 0 512 512",
+            children: "<path d=\"M367.2 412.5L99.5 144.8C77.1 176.1 64 214.5 64 256c0 106 86 192 192 192c41.5 0 79.9-13.1 111.2-35.5zm45.3-45.3C434.9 335.9 448 297.5 448 256c0-106-86-192-192-192c-41.5 0-79.9 13.1-111.2 35.5L412.5 367.2zM0 256a256 256 0 1 1 512 0A256 256 0 1 1 0 256z\"/>"
         });
     }
 }
