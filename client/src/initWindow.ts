@@ -1,5 +1,5 @@
 import type Alpine from "alpinejs";
-import { PlayIcon } from "./components/icons.ts";
+import { HeartIcon, LameIcon, PlayIcon, PoopIcon } from "./components/icons.ts";
 import { Context } from "pinecone-router/dist/types";
 
 export type AppRouter = { [handler: string]: (ctx: Context) => void };
@@ -65,3 +65,6 @@ export const initWindow = (alpine: typeof Alpine) => {
 };
 
 customElements.define("play-icon", PlayIcon);
+customElements.define("heart-icon", HeartIcon);
+customElements.define("lame-icon", LameIcon);
+customElements.define("poop-icon", PoopIcon);
