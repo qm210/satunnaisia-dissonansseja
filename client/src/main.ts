@@ -1,11 +1,17 @@
 import "./style.css";
 import Alpine from "alpinejs";
 import PineconeRouter from "pinecone-router";
+import Persist from "@alpinejs/persist";
 import { initWindow } from "./initWindow.ts";
 import FilesListPage from "./pages/files";
 import CurrentWavPage from "./pages/currentWav";
+import { Rated } from "./enums.ts";
+import type { RatingsStore, Rating } from "./types";
 
-initWindow(Alpine);
+Alpine.plugin(PineconeRouter);
+Alpine.plugin(Persist);
+
+initWindow();
 
 const root = document.querySelector<HTMLDivElement>("#app")!;
 
@@ -38,6 +44,9 @@ root.innerHTML = `
  
     <div
         x-data="defaultRouter"
+        x-init="
+            window.$router = $router;
+        "
         class="w-full h-full"
     >
         <template x-route="/">
@@ -55,5 +64,27 @@ root.innerHTML = `
     </div>
 `;
 
-Alpine.plugin(PineconeRouter);
+document.addEventListener("alpine:init", () => {
+    Alpine.store("ratings", {
+        unsaved: Alpine.$persist<Rating[]>(
+            []
+        ).as("satan.ratings.unsaved"),
+
+        rate(this: RatingsStore, file: string, rated: Rated) {
+            const alreadyRated = this.unsaved
+                .find((r: Rating) => r.file === file);
+            if (alreadyRated) {
+                alreadyRated.rated = rated;
+            } else {
+                this.unsaved
+                    .push({ file, rated });
+            }
+        },
+
+        clear(this: RatingsStore) {
+            this.unsaved = [];
+        }
+    });
+});
+
 Alpine.start();
