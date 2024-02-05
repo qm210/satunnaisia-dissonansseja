@@ -4,14 +4,11 @@ from typing import Optional
 
 
 class FilesService:
-    wav_folder: string = "./wav"
-
-    def __init__(self, app, db, **kwargs):
+    def __init__(self, db, config):
         # this should only hold constant configuration information
         # no state on a request basis!
-        self.app = app
         self.db = db
-        self.wav_folder = kwargs.get("wav_folder", self.wav_folder)
+        self.wav_folder = config["wav"]["folder"]
 
     def get_all_wavs(self):
         folder = Path(self.wav_folder)
@@ -37,3 +34,6 @@ class FilesService:
     def get_single_wav_path(self, file: string) -> Optional[string]:
         result = Path(self.wav_folder) / Path(file)
         return result.resolve() if result.exists() else None
+
+    def store_new_ratings(self, ratings):
+        print("STORE", ratings)

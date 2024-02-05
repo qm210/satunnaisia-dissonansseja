@@ -1,14 +1,29 @@
-import { BanIcon, HeartIcon, LameIcon, PlayIcon, PoopIcon, TrashIcon } from "./components/icons.ts";
+import {
+    BanIcon,
+    CrossIcon,
+    HeartIcon,
+    LameIcon, LoadingIcon,
+    PlayIcon,
+    PoopIcon,
+    SaveIcon,
+    TrashIcon
+} from "./components/icons.ts";
 import { Context } from "pinecone-router/dist/types";
+import type { Rating } from "./types";
 
 export type AppRouter = { [handler: string]: (ctx: Context) => void };
 
 declare global {
     interface Window {
+        // setup
         $router?: typeof Proxy,
         defaultRouter: AppRouter,
-        fetchJson: <T = any>(url: string) => Promise<T | null>;
+
+        // general helpers
+        fetchJson: <R = any>(url: string) => Promise<R | null>;
         fetchIntoAudioPlayer: (url: string) => Promise<HTMLAudioElement>;
+        postJson: <T extends object | void = void, R = void>(url: string, body: T) => Promise<R | undefined>;
+        setDebounced: (callback: () => void) => void;
     }
 }
 
@@ -38,6 +53,31 @@ export const initWindow = () => {
         } catch (err) {
             console.warn("fetchJson ERROR", url, err);
             return null;
+        }
+    };
+
+    const content = async <R = unknown>(response: Response): Promise<R> => {
+        let result: R | string | undefined;
+        if (response.headers.get("Content-Type")?.includes("application/json")) {
+            result = await response.json();
+        } else {
+            result = await response.text();
+        }
+        return result as R;
+    };
+
+    window.postJson = async <T, R>(url: string, body: T) => {
+        try {
+            const response = await fetch(url, {
+                method: "POST",
+                body: body ? JSON.stringify(body) : undefined,
+                headers: {
+                    "Content-Type": "application/json; charset=UTF-8"
+                }
+            });
+            return content<R>(response);
+        } catch (err) {
+            console.warn("postJson ERROR", url, body, err);
         }
     };
 
@@ -76,6 +116,18 @@ export const initWindow = () => {
         await Promise.all([loadReader, loadMetaData]);
         return player;
     };
+
+    // works only for one debounce at a time, obviously, but this should be enough for now.
+    let timeout: number | undefined;
+    window.setDebounced = (callback: (() => void)) => {
+        if (timeout) {
+            clearTimeout(timeout);
+        }
+        timeout = setTimeout(() => {
+            callback();
+            timeout = undefined;
+        }, 250);
+    };
 };
 
 customElements.define("play-icon", PlayIcon);
@@ -84,3 +136,6 @@ customElements.define("lame-icon", LameIcon);
 customElements.define("poop-icon", PoopIcon);
 customElements.define("ban-icon", BanIcon);
 customElements.define("trash-icon", TrashIcon);
+customElements.define("x-mark", CrossIcon);
+customElements.define("save-icon", SaveIcon);
+customElements.define("loading-icon", LoadingIcon);

@@ -1,4 +1,7 @@
-from flask import g, current_app, Blueprint, send_file, abort
+from dependency_injector.wiring import Provide, inject
+from flask import Blueprint, send_file, abort, request
+
+from server.containers import Container
 
 api = Blueprint('api', __name__)
 
@@ -10,13 +13,23 @@ def some_bullshit_but_glad_that_i_am_alive():
 
 
 @api.route('/all', methods=['GET'])
-def all_waves():
-    return g.files_service.get_all_wavs()
+@inject
+def all_waves(files_service=Provide[Container.files_service]):
+    return files_service.get_all_wavs()
 
 
 @api.route('/wav/<path:file>', methods=['GET'])
-def play_single_wave(file):
-    path = g.files_service.get_single_wav_path(file)
+@inject
+def play_single_wave(file, files_service=Provide[Container.files_service]):
+    path = files_service.get_single_wav_path(file)
     if path is None:
         abort(404)
     return send_file(path, mimetype='audio/wav')
+
+
+@api.route('/ratings', methods=['POST'])
+@inject
+def post_ratings(files_service=Provide[Container.files_service]):
+    ratings = request.get_json()
+    files_service.store_new_ratings(ratings)
+    return "lol", 200

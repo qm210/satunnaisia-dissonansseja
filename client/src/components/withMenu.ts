@@ -1,6 +1,7 @@
 type MenuPoint = {
     label: string,
     onClick?: string
+    hide?: boolean,
 };
 
 const renderMenuPoint = (point: MenuPoint) => `
@@ -12,7 +13,10 @@ const renderMenuPoint = (point: MenuPoint) => `
     </div>`;
 
 const renderMenuPoints = (list: MenuPoint[] | undefined) =>
-    (list ?? []).map(renderMenuPoint).join("");
+    (list ?? [])
+        .filter(p => !p.hide)
+        .map(renderMenuPoint)
+        .join("");
 
 export const WithMenu = ({ left, right, content }: { left?: MenuPoint[], right?: MenuPoint[], content: string }) => `
     <div class="flex flex-col w-full h-full">
@@ -21,7 +25,7 @@ export const WithMenu = ({ left, right, content }: { left?: MenuPoint[], right?:
             <div class="flex-grow"></div>
             ${renderMenuPoints(right)}
         </div>
-        <div class="flex-grow" style="overflow: auto;">
+        <div class="flex-grow h-full" style="overflow: auto;">
             ${content}
         </div> 
     </div>

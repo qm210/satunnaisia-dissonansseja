@@ -92,3 +92,40 @@ button:focus-visible {
     background: #eef;
     z-index: 1;
 }
+
+.spinning {
+    animation: spin 2s linear infinite;
+}
+
+@keyframes spin {
+    from {
+        transform: rotate(0deg);
+    }
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+.synthglow {
+    animation: synthglowing 5s infinite;
+}
+
+@keyframes synthglowing {
+    0% {
+        background-color: hsla(210, 100%, 50%, 10%);
+    }
+    50% {
+        background-color: hsla(300, 100%, 50%, 10%);
+    }
+    100% {
+        background-color: hsla(210, 100%, 50%, 10%);
+    }
+}
+
+.ratings-table td:not(:last-of-type) {
+    padding: 1rem;
+}
+
+.ratings-table td:last-of-type {
+    padding-right: 0.25rem;
+}

@@ -1,10 +1,25 @@
 import { WithMenu } from "../components/withMenu.ts";
-import { Rated } from "../enums.ts";
+import { Rated, ratedProps } from "../enums.ts";
 import Alpine from "alpinejs";
+import { Rating } from "../types";
+
 
 (window as any).Rated = Rated;
+(window as any).ratedProps = ratedProps;
 
-// TODO: how to unify Menu with the one in the files page?
+Alpine.data("initCurrentWav", (alreadyRated: Rating | null) => ({
+    alreadyRated,
+    inputComment: alreadyRated?.comment ?? "",
+    extraClassesFor: (rated: Rated) =>
+        Object.fromEntries(
+            Object.entries(ratedProps)
+                .flatMap(e => [
+                    [e[1].extraClass, e[0] === rated],
+                    ["text-yellow", e[0] === alreadyRated?.rated]
+                ])
+        )
+}));
+
 export default () =>
     WithMenu({
         left: [{
@@ -23,8 +38,8 @@ export default () =>
                     error: null,
                     
                     rate: (r) => {
-                      $store.ratings.rate($router.params.file, r);
-                      $router.navigate('/')
+                      $store.ratings.setRated($router.params.file, r);
+                      history.back()
                     }
                 }"
                 x-init="
@@ -51,11 +66,14 @@ export default () =>
                     @click="$router.navigate('/')"                
                 >
                     <ban-icon size="6rem" color="red"></ban-icon>
-                    <div>
-                        {error}
+                    <div x-text="error">
                     </div>
                 </div>
-                <div x-show="audioPlayer !== null" class="flex-grow flex flex-col justify-center h-full gap-2">
+                <div
+                    x-show="audioPlayer !== null"
+                    class="flex-grow flex flex-col justify-center h-full gap-2"
+                    x-data="initCurrentWav($store.ratings.alreadyRated($router.params.file))"
+                >
                     <div class="border border-black">
                         <div class="text-xs m-1">
                             Duration: <span x-text="audioPlayer?.duration + ' sec'"></span> 
@@ -71,38 +89,45 @@ export default () =>
                             </div>
                         </button>
                     </div>
-                    <div class="border border-black w-full">
+                    <div
+                        class="flex items-center border border-black w-full"
+                    >
                         <input
-                            placeholder="Comment"
+                            type="text"
+                            x-model="inputComment"
+                            placeholder="Comment..."
+                            x-on:input="setDebounced(() => $store.ratings.setComment($router.params.file, inputComment));"
                             x-on:focus="$event.target.select()"
                             class="p-2 w-full text-center"
                         />
+                        <span
+                            class="p-2 cursor-pointer"
+                            x-show="!!inputComment"
+                            x-on:click="
+                                $store.ratings.setComment($router.params.file, '');
+                                inputComment = '';
+                            "
+                        >
+                            <x-mark></x-mark>
+                        </span>
                     </div>
-                    <div class="flex justify-stretch items-stretch border border-black">
-                        <div class="flex-1 flex flex-col justify-center p-4 border-r border-black hover:bg-green-200 cursor-pointer whites"
-                            @click="rate(Rated.AweSomFul)"
-                        >
-                            <heart-icon></heart-icon>
-                            <span class="whitespace-nowrap">
-                                Awesomful
-                            </span>
-                        </div>
-                        <div class="flex-1 flex flex-col justify-center p-4 border-x border-transparent hover:bg-orange-200 cursor-pointer"
-                            @click="rate(Rated.NeedsLove)"
-                        >
-                            <lame-icon></lame-icon>
-                            <span class="whitespace-nowrap">
-                                Needs Love
-                            </span>
-                        </div>
-                        <div class="flex-1 flex flex-col justify-center p-4 border-l border-black hover:bg-red-200 cursor-pointer"
-                            @click="rate(Rated.EqualsBubu)"
-                        >
-                            <poop-icon></poop-icon>
-                            <span class="whitespace-nowrap">
-                                Equals Bubu
-                            </span>
-                        </div>
+                    <div
+                        class="flex justify-stretch items-stretch divide-x divide-black border-r border-y border-black"
+                    >
+                        <template x-for="rated of [Rated.Awesomful, Rated.NeedsLove, Rated.EqualsBubu]">
+                            <div
+                                class="flex-1 flex flex-col justify-center p-4 cursor-pointer whites"
+                                @click="rate(rated)"
+                                :class="extraClassesFor(rated)"
+                            >
+                                <div x-html="ratedProps[rated].html"></div>
+                                <span
+                                    class="whitespace-nowrap"
+                                    x-text="ratedProps[rated].title"
+                                >    
+                                </span>
+                            </div>
+                        </template>
                     </div>
                 </div>
             </div>

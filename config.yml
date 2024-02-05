@@ -1,0 +1,4 @@
+db:
+  file: "db/db.sqlite3"
+wav:
+  folder: "wav/"

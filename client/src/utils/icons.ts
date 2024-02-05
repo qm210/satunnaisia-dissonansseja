@@ -1,0 +1,69 @@
+type SvgIconProps = {
+    children: string,
+    viewBox: string
+    defaultColor?: string,
+};
+
+const getAttributesStringExcept = (names: string[], element: HTMLElement) =>
+    element.getAttributeNames()
+        .filter(name => !names.includes(name))
+        .map(name =>
+            ({ name, value: element.getAttribute(name) })
+        )
+        .map(attr =>
+            `${attr.name}="${attr.value}"`
+        )
+        .join(" ");
+
+const createSpinPart = (element: HTMLElement) => {
+    const spin = element.getAttribute("spin");
+    if (!spin) {
+        return {
+            style: "",
+            class: ""
+        };
+    }
+    return {
+        style: `
+            <style>
+                .spinning {
+                    animation: spin ${spin} linear infinite;
+                }
+                
+                @keyframes spin {
+                    from {
+                        transform: rotate(0deg);
+                    }
+                    to {
+                        transform: rotate(360deg);
+                    }
+                }
+            </style>
+        `,
+        class: "class=\"spinning\""
+    };
+};
+
+export const addSvgPathAsShadow = (element: HTMLElement, { children, viewBox, defaultColor }: SvgIconProps) => {
+    const shadow = element.attachShadow({ mode: "open" });
+    const size = element.getAttribute("size") || 24;
+    const color = element.getAttribute("color") || defaultColor || "currentColor";
+    const spin = createSpinPart(element);
+    const otherAttributes = getAttributesStringExcept(["size, color, spin"], element);
+    viewBox ||= `0 0 ${size} ${size}`;
+    children ||= "<slot></slot>";
+    shadow.innerHTML = `
+            ${spin.style}
+            <svg
+                xmlns="http://www.w3.org/2000/svg"
+                width="${size}"
+                height="${size}"
+                viewBox="${viewBox}"
+                fill="${color}"
+                ${otherAttributes}
+                ${spin.class}
+            >
+                ${children}
+            </svg>
+        `;
+};
