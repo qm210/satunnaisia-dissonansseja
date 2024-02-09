@@ -3,6 +3,9 @@ from dependency_injector.ext import flask
 from flask import Flask
 from flask_sqlalchemy import SQLAlchemy
 
+from server.model.base import Base
+from server.repositories.rating import RatingRepository
+from server.repositories.user import UserRepository
 from server.service.files import FilesService
 
 
@@ -30,10 +33,21 @@ class Container(containers.DeclarativeContainer):
     db = providers.Singleton(
         SQLAlchemy,
         app=app,
+        model_class=Base
+    )
+
+    user_repository = providers.Factory(
+        UserRepository,
+        session_factory=db.provided.session
+    )
+
+    rating_repository = providers.Factory(
+        RatingRepository,
+        session_factory=db.provided.session
     )
 
     files_service = providers.Factory(
         FilesService,
-        db=db,
         config=config,
+        rating_repository=rating_repository
     )

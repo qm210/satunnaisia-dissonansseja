@@ -4,11 +4,11 @@ from typing import Optional
 
 
 class FilesService:
-    def __init__(self, db, config):
+    def __init__(self, config, rating_repository):
         # this should only hold constant configuration information
         # no state on a request basis!
-        self.db = db
         self.wav_folder = config["wav"]["folder"]
+        self.rating_repository = rating_repository
 
     def get_all_wavs(self):
         folder = Path(self.wav_folder)
@@ -31,9 +31,11 @@ class FilesService:
             result.items()
         ))
 
+    def get_unrated_wavs_for(self, username: string):
+        all_rated = self.rating_repository.query_rated_by(username)
+        all_wavs = self.get_all_wavs()
+        return all_wavs
+
     def get_single_wav_path(self, file: string) -> Optional[string]:
         result = Path(self.wav_folder) / Path(file)
         return result.resolve() if result.exists() else None
-
-    def store_new_ratings(self, ratings):
-        print("STORE", ratings)

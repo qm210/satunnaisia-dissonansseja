@@ -9,7 +9,6 @@ import {
     TrashIcon
 } from "./components/icons.ts";
 import { Context } from "pinecone-router/dist/types";
-import type { Rating } from "./types";
 
 export type AppRouter = { [handler: string]: (ctx: Context) => void };
 

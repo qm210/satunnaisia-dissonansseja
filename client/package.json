@@ -10,17 +10,18 @@
         "preview": "vite preview"
     },
     "devDependencies": {
+        "@types/alpinejs": "3.13.6",
         "@types/alpinejs__persist": "3.13.3",
-        "@typescript-eslint/eslint-plugin": "6.19.1",
+        "@typescript-eslint/eslint-plugin": "6.21.0",
         "tailwindcss": "3.4.1",
-        "typescript": "5.2.2",
-        "vite": "5.0.12",
+        "typescript": "5.3.3",
+        "vite": "5.1.0",
         "vite-plugin-eslint": "1.8.1"
     },
     "dependencies": {
         "@alpinejs/persist": "3.13.5",
-        "@types/alpinejs": "3.13.6",
         "alpinejs": "3.13.5",
+        "async-alpine": "1.2.1",
         "pinecone-router": "4.2.0"
     }
 }

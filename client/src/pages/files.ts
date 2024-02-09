@@ -1,3 +1,13 @@
+(window as any).labelledCount = (list: any[], singular: string, plural?: string) => {
+    if (plural === undefined) {
+        plural = singular + "s";
+    }
+    const unit = Math.abs(list.length) === 1
+        ? singular
+        : plural;
+    return `${list.length} ${unit}`;
+};
+
 export default () => `
     <div
         class="flex flex-col w-full h-full"
@@ -6,13 +16,27 @@ export default () => `
             
             submit: async function () {
                 this.submitting = true;
-                postJson('/api/ratings', $store.ratings.unsaved)
-                    .then(() => {
-                        // $store.ratings.clear();
+                postJson('/api/ratings', {
+                    ratings: $store.ratings.unsaved,
+                    username: $store.user.name,
+                })
+                    .then((n) => {
+                        $store.ratings.clear();
+                        $store.messages.add(
+                            n + ' ratings for ' + $store.user.name + ' stored',
+                            3000
+                        );
                     })
                     .finally(() => {
                         this.submitting = false;
                     });
+            },
+            
+            discard: function() {
+                if (!window.confirm('Discard every rating, all the hard work you put into it? Do you value your life so litte, your opinion so unworthy, your time so abundant? You sure, go ahead?')) {
+                    return;
+                }
+                $store.ratings.clear();
             }
         }"
     >
@@ -30,7 +54,7 @@ export default () => `
                 href="/unsaved"
                 x-show="!submitting"
                 class="flex-grow text-lg cursor-pointer"
-                x-text="$store.ratings.unsaved.length + ' Unsaved Ratings'"
+                x-text="labelledCount($store.ratings.unsaved, 'Unsaved Rating')"
             >
             </a>
             <div
@@ -40,7 +64,7 @@ export default () => `
                 <button @click="submit()">
                     <save-icon color="darkgreen"></save-icon>                
                 </button>
-                <button @click="$store.ratings.clear()">
+                <button @click="discard()">
                     <trash-icon></trash-icon>
                 </button>
             </div>
@@ -50,10 +74,10 @@ export default () => `
                 {data: [], isLoading: true}
             "
             x-init="
-                fetchJson('/api/all')
+                fetchJson('/api/unrated/' + $store.user.name)
                 .then(res => {data = res; isLoading = false;});
                 "
-            class="flex-grow h-full flex flex-col overflow-y-hidden p-2"
+            class="flex-grow h-full flex flex-col overflow-y-hidden"
             >
             <h3 x-show="isLoading">
                 Loading...
@@ -65,7 +89,7 @@ export default () => `
                     <tr class="align text-lg">
                         <td
                             x-text="taggedGroup.tag || 'UNTAGGED'"
-                            class="sticky left-0 p-2 text-left bg-white truncate"
+                            class="sticky left-0 p-4 text-left bg-white truncate"
                         />
                         <td
                             class="sticky left-24 bg-white"

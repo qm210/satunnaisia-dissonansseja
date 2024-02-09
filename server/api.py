@@ -9,18 +9,27 @@ api = Blueprint('api', __name__)
 @api.route('/info')
 def some_bullshit_but_glad_that_i_am_alive():
     # this is just the "are you alive?" endpoint ;)
-    return "'you gonne be my Hubschrauberlandeplatz?' - Johann Lafer, ca. 2018"
+    return [
+        "\"You gonne be my HUBSCHRAUBERLANDEPLATZ?\"",
+        "Johann Lafer, ca. 2018, koloriert"
+    ]
 
 
 @api.route('/all', methods=['GET'])
 @inject
-def all_waves(files_service=Provide[Container.files_service]):
+def all_wavs(files_service=Provide[Container.files_service]):
     return files_service.get_all_wavs()
+
+
+@api.route('/unrated/<username>', methods=['GET'])
+@inject
+def get_unrated_wavs(username, files_service=Provide[Container.files_service]):
+    return files_service.get_unrated_wavs_for(username)
 
 
 @api.route('/wav/<path:file>', methods=['GET'])
 @inject
-def play_single_wave(file, files_service=Provide[Container.files_service]):
+def play_single_wav(file, files_service=Provide[Container.files_service]):
     path = files_service.get_single_wav_path(file)
     if path is None:
         abort(404)
@@ -29,7 +38,16 @@ def play_single_wave(file, files_service=Provide[Container.files_service]):
 
 @api.route('/ratings', methods=['POST'])
 @inject
-def post_ratings(files_service=Provide[Container.files_service]):
-    ratings = request.get_json()
-    files_service.store_new_ratings(ratings)
-    return "lol", 200
+def post_ratings(rating_repository=Provide[Container.rating_repository]):
+    ratings = request.get_json().get('ratings')
+    username = request.get_json().get('username')
+    new_ids = rating_repository.add_multiple_for_user(ratings, username)
+    return new_ids, 200
+
+
+@api.route('/user', methods=['POST'])
+@inject
+def ensure_user(user_repository=Provide[Container.user_repository]):
+    name = request.get_json().get("username")
+    user = user_repository.login(name)
+    return str(user['id'])

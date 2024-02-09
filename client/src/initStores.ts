@@ -1,14 +1,25 @@
-import Alpine, { AlpineComponent } from "alpinejs";
+import Alpine from "alpinejs";
 import type { Rating } from "./types";
 import { Rated } from "./enums.ts";
+import { Message, MessageStore, RatingsStore } from "./stores";
+import { milliseconds } from "./utils/types";
 
-export type RatingsStore = AlpineComponent<any> & {
-    unsaved: Rating[],
-};
+// try not to spread the store keys all over the code...
+enum StoreKey {
+    User = "user",
+    Ratings = "ratings",
+    Messages = "messages"
+}
 
 export const initStores = () => {
 
-    Alpine.store("ratings", {
+    Alpine.store(StoreKey.User, {
+        name: Alpine.$persist<string>(
+            ""
+        ).as("satan.user.name")
+    });
+
+    Alpine.store(StoreKey.Ratings, {
         unsaved: Alpine.$persist<Rating[]>(
             []
         ).as("satan.ratings.unsaved"),
@@ -46,4 +57,37 @@ export const initStores = () => {
             }
         }
     });
+
+    Alpine.store(StoreKey.Messages, {
+        current: [],
+        autoId: 0,
+
+        add(this: MessageStore, message: string | string[], lifetime?: milliseconds) {
+            let title, subtitle;
+            if (message instanceof Array) {
+                [title, subtitle] = message;
+            } else {
+                title = message;
+            }
+            const id = this.autoId++;
+            this.current.push({
+                id,
+                title,
+                subtitle,
+                color: !!lifetime ? "darkred" : "#444"
+            } as Message);
+            if (lifetime) {
+                setTimeout(() => {
+                    this.current = this.current
+                        .filter((n: Message) => n.id !== id);
+                }, lifetime);
+            }
+        }
+    });
 };
+
+export const getUserName = () =>
+    (Alpine.store(StoreKey.User) as { name: string })?.name;
+
+export const messageStore = () =>
+    Alpine.store(StoreKey.Messages) as MessageStore;

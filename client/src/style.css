@@ -66,6 +66,11 @@ button:hover {
     border-color: #646cff;
 }
 
+button:disabled {
+    opacity: 0.3;
+    pointer-events: none;
+}
+
 button:focus,
 button:focus-visible {
     outline: 4px auto -webkit-focus-ring-color;
