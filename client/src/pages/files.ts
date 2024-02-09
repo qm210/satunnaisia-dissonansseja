@@ -20,12 +20,15 @@ export default () => `
                     ratings: $store.ratings.unsaved,
                     username: $store.user.name,
                 })
-                    .then((n) => {
+                    .then((ids) => {
                         $store.ratings.clear();
                         $store.messages.add(
-                            n + ' ratings for ' + $store.user.name + ' stored',
+                            labelledCount(ids, 'rating') + ' for ' + $store.user.name + ' stored',
                             3000
                         );
+                    })
+                    .catch((err) => {
+                        console.error(err);
                     })
                     .finally(() => {
                         this.submitting = false;

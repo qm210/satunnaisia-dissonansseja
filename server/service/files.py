@@ -1,6 +1,6 @@
 import string
 from pathlib import Path
-from typing import Optional
+from typing import Optional, List
 
 
 class FilesService:
@@ -10,11 +10,17 @@ class FilesService:
         self.wav_folder = config["wav"]["folder"]
         self.rating_repository = rating_repository
 
-    def get_all_wavs(self):
+    def get_all_wavs(self, except_files: Optional[List[string]] = None):
         folder = Path(self.wav_folder)
         result = {}
         for item in folder.glob("**/*.wav"):
             file = item.relative_to(folder)
+
+            if except_files:
+                check_file = file.as_posix()
+                if check_file in except_files:
+                    continue
+
             tag = '/'.join(file.parts[:-1]) \
                 if len(file.parts) > 1 else ""
             file_info = {
@@ -25,16 +31,18 @@ class FilesService:
             if tag not in result:
                 result[tag] = []
             result[tag].append(file_info)
-
+        print(result, except_files)
         return list(map(
             lambda t: {'tag': t[0], 'files': t[1]},
             result.items()
         ))
 
     def get_unrated_wavs_for(self, username: string):
-        all_rated = self.rating_repository.query_rated_by(username)
-        all_wavs = self.get_all_wavs()
-        return all_wavs
+        all_rated = [
+            rating.file for rating in
+            self.rating_repository.query_rated_by(username)
+        ]
+        return self.get_all_wavs(except_files=all_rated)
 
     def get_single_wav_path(self, file: string) -> Optional[string]:
         result = Path(self.wav_folder) / Path(file)

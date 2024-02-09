@@ -14,3 +14,6 @@ class Rating(Base):
     rating = Column(String(64), nullable=False)
     timestamp = Column(DateTime, default=func.now())
     comment = Column(String(255), nullable=True)
+
+    def __repr__(self):
+        return f"<Rating {self.user_id}/{self.file}: {self.rating}>"
