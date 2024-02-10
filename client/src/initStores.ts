@@ -16,7 +16,9 @@ export const initStores = () => {
     Alpine.store(StoreKey.User, {
         name: Alpine.$persist<string>(
             ""
-        ).as("satan.user.name")
+        ).as("satan.user.name"),
+
+        fetchedWavsLastTime: 0
     });
 
     Alpine.store(StoreKey.Ratings, {

@@ -36,11 +36,10 @@ type FilesListData = {
     unratedGroups: TaggedFileGroup[],
     isSubmitting: boolean,
     isLoading: boolean,
-    nFilesLastTime: number | null,
     fetch: () => void,
     submit: () => void,
     discard: () => void,
-    startPlayGroup: (group: TaggedFileGroup) => void,
+    startQueue: (group: TaggedFileGroup) => void,
 };
 
 const updateUnrated = (data: Component<FilesListData>) =>
@@ -56,7 +55,6 @@ Alpine.data("filesList", (): WithInit<FilesListData> => ({
     unratedGroups: [],
     isSubmitting: false,
     isLoading: true,
-    nFilesLastTime: null,
 
     init(this: Component<FilesListData>) {
         this.$store.ratings.playQueue = [];
@@ -71,12 +69,12 @@ Alpine.data("filesList", (): WithInit<FilesListData> => ({
             .then(res => {
                 this.allGroups = res;
                 const nFiles = countFiles(res);
-                if (nFiles !== this.nFilesLastTime) {
+                if (nFiles !== this.$store.user.fetchedWavsLastTime) {
                     this.$store.messages.add(
                         labelledCount(nFiles, "file") + " unrated files found",
                         5000
                     );
-                    this.nFilesLastTime = nFiles;
+                    this.$store.user.fetchedWavsLastTime = nFiles;
                 }
             })
             .finally(() => {
@@ -113,7 +111,7 @@ Alpine.data("filesList", (): WithInit<FilesListData> => ({
         this.$store.ratings.clear();
     },
 
-    startPlayGroup: function(this: Component<FilesListData>, group: TaggedFileGroup) {
+    startQueue: function(this: Component<FilesListData>, group: TaggedFileGroup) {
         const first = group.files[0];
         if (!first) {
             alert("Empty Group! Can't do shit!");
@@ -175,8 +173,9 @@ export default () => `
                             class="sticky left-24 bg-white"
                             >
                             <button
-                                @click="startPlayGroup(taggedGroup)"
+                                @click="startQueue(taggedGroup)"
                                 class="px-1 pt-2 pb-0"
+                                title="Play as queue"
                             >
                                 <play-icon></play-icon>
                             </button>

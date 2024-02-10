@@ -7,6 +7,7 @@ from server.model.base import Base
 from server.repositories.rating import RatingRepository
 from server.repositories.user import UserRepository
 from server.service.files import FilesService
+from server.service.sointu import SointuService
 
 
 class Container(containers.DeclarativeContainer):
@@ -50,4 +51,9 @@ class Container(containers.DeclarativeContainer):
         FilesService,
         config=config,
         rating_repository=rating_repository
+    )
+
+    sointu_service = providers.Factory(
+        SointuService,
+        config=config
     )

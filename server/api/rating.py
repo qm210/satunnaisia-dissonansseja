@@ -3,7 +3,7 @@ from flask import Blueprint, send_file, abort, request
 
 from server.containers import Container
 
-api = Blueprint('api', __name__)
+api = Blueprint('rating', __name__)
 
 
 @api.route('/info')
@@ -55,7 +55,7 @@ def post_ratings(rating_repository=Provide[Container.rating_repository]):
 
 @api.route('/user', methods=['POST'])
 @inject
-def ensure_user(user_repository=Provide[Container.user_repository]):
+def check_user(user_repository=Provide[Container.user_repository]):
     name = request.get_json().get("username")
-    user = user_repository.login(name)
-    return str(user['id'])
+    user = user_repository.check_user(name)
+    return user

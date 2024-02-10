@@ -600,16 +600,12 @@ video {
   margin: auto;
 }
 
-.mt-2 {
-  margin-top: 0.5rem;
+.mt-1 {
+  margin-top: 0.25rem;
 }
 
 .mt-4 {
   margin-top: 1rem;
-}
-
-.mt-1 {
-  margin-top: 0.25rem;
 }
 
 .block {
@@ -696,6 +692,10 @@ video {
 
 .justify-stretch {
   justify-content: stretch;
+}
+
+.gap-1 {
+  gap: 0.25rem;
 }
 
 .gap-2 {

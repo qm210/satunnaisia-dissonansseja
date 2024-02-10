@@ -8,6 +8,7 @@ export type Store = {
     messages: MessageStore,
     user: {
         name: string,
+        fetchedWavsLastTime: number | null,
     }
 };
 

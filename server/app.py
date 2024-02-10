@@ -4,13 +4,14 @@ from pathlib import Path
 from flask import send_from_directory
 from flask_migrate import Migrate
 
-from server.api import api
+from server.api.rating import api as rating_api
+from server.api.sointu import api as sointu_call_api
 from server.containers import Container
 
 
 def create_app():
     container = Container()
-    container.wire(modules=[".api"])
+    container.wire(packages=[".api"])
 
     app = container.app()
     app.container = container
@@ -28,7 +29,8 @@ def create_app():
         logging.DEBUG if app.config['DEBUG'] else logging.INFO
     )
 
-    app.register_blueprint(api, url_prefix="/api")
+    app.register_blueprint(rating_api, url_prefix="/api")
+    app.register_blueprint(sointu_call_api, url_prefix="/api/sointu")
 
     @app.route('/')
     def index():

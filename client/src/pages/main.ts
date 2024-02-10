@@ -10,8 +10,8 @@ import { Point } from "../utils/types";
     left: ${pos.x ?? 0}px;
     top: ${pos.y}px;
     background-color: #bebebece;
-    border-radius: 4px;
-    padding: 4px;
+    border-radius: 8px;
+    transform: translateY(-100%);
 `;
 
 const MessageList = () => `
@@ -105,6 +105,7 @@ function NameTag() {
             @contextmenu.window="showMenu = false;"     
             @click.outside="showMenu = false;"       
             @click="showMenu = false;"
+            title="Right click for more options"
         >
             <span class="select-none">
                 Username:
@@ -116,6 +117,7 @@ function NameTag() {
             </a>
             <div
                 x-show="showMenu"
+                class="flex flex-col items-stretch p-1 gap-1"
                 :style="contextMenuStyle(menuPos)"
             >
                 <button
@@ -126,6 +128,15 @@ function NameTag() {
                     <span
                         x-html="'Delete All Ratings For <b>' + $store.user.name + '</b>'"
                     >
+                    </span>
+                </button>
+                <button
+                    class="flex gap-4"
+                    @click="postJson('/api/sointu/try-execute').catch(alert)"
+                >
+                    <audiofile-icon></audiofile-icon>
+                    <span>
+                        Call some sointu endpoint just for fun
                     </span>
                 </button>
             </div>

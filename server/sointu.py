@@ -25,17 +25,22 @@ from jinja2 import (
 from unit import Instrument
 from yaml import safe_load, dump
 
+
 class SointuCompileError(Exception):
     pass
+
 
 class AssemblerError(Exception):
     pass
 
+
 class LinkerError(Exception):
     pass
 
+
 class WavWriterError(Exception):
     pass
+
 
 # Wow, I can not begin to comprehend how an unsuitable Moloch like
 # the Windows registry is considered useful by some individuals.
@@ -47,6 +52,7 @@ windowsSdkInstallFolder, _ = QueryValueEx(windowsSdkKey, r'InstallationFolder')
 windowsSdkKey.Close()
 registry.Close()
 WindowsSdkLibPath: Path = Path(windowsSdkInstallFolder) / 'Lib' / '{}.0'.format(windowsSdkProductVersion) / 'um' / 'x86'
+
 
 class Sointu:
     @staticmethod
@@ -122,9 +128,10 @@ class Sointu:
 
         return wav_file.read_bytes()
 
+
 if __name__ == '__main__':
     instrument: Instrument = Instrument.parse(Path(files(templates) / 'instrument.yml').read_text())
-    
+
     sequenceObject = safe_load(Path(files(templates) / 'sequence.yml').read_text())
     sequenceObject['patch'] = [instrument.serialize()] + sequenceObject['patch']
     print(dump(sequenceObject, indent=2))

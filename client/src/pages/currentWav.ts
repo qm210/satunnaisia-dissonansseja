@@ -3,10 +3,14 @@ import { Rated, ratedProps } from "../enums.ts";
 import Alpine from "alpinejs";
 import { Component, Rating, TaggedFile, WithInit } from "../types";
 import { ratingsStore } from "../initStores.ts";
-import { RatingsStore } from "../stores";
 
 
-(window as any).Rated = Rated;
+(window as any).ratedChoice = [
+    Rated.Awesomful,
+    Rated.NeedsLove,
+    Rated.EqualsBubu
+];
+
 (window as any).ratedProps = ratedProps;
 
 Alpine.data("initCurrentWav", (alreadyRated: Rating | null) => ({
@@ -168,7 +172,7 @@ export default () =>
                     <div
                         class="flex justify-stretch items-stretch divide-x divide-black border-r border-y border-black"
                     >
-                        <template x-for="rated of [Rated.Awesomful, Rated.NeedsLove, Rated.EqualsBubu]">
+                        <template x-for="rated of ratedChoice">
                             <div
                                 class="flex-1 flex flex-col justify-center p-4 cursor-pointer whites"
                                 @click="rate(rated)"

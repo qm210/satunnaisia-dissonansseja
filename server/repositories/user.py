@@ -1,5 +1,6 @@
 from datetime import datetime
 
+from server.model.rating import Rating
 from server.model.user import User
 
 
@@ -14,10 +15,11 @@ class UserRepository:
             session.commit()
             return user
 
-    def login(self, username):
+    def check_user(self, username):
         with self.session_factory() as session:
             user = (
-                session.query(User)
+                session
+                .query(User)
                 .filter(User.username == username)
                 .one_or_none()
             )
@@ -26,5 +28,14 @@ class UserRepository:
                 session.add(user)
             else:
                 user.last_login = datetime.now()
+            count_ratings = (
+                session
+                .query(Rating)
+                .filter(Rating.user_id == user.id)
+                .count()
+            )
             session.commit()
-            return user.as_dict()
+            return {
+                **user.as_dict(),
+                'count_ratings': count_ratings
+            }
