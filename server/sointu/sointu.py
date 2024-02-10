@@ -1,6 +1,6 @@
-from typing import Self
-from server.dependency import (
-    Dependencies,
+from typing import Dict
+
+from server.sointu.dependency import (
     Dependency,
 )
 from subprocess import (
@@ -18,29 +18,11 @@ from winreg import (
     HKEYType,
     QueryValueEx,
 )
-from jinja2 import (
-    Environment,
-    FileSystemLoader,
-)
+
+from server.model.error import SointuCompileError, AssemblerError, LinkerError, WavWriterError
+from server.sointu.downloader import Downloader
 from unit import Instrument
 from yaml import safe_load, dump
-
-
-class SointuCompileError(Exception):
-    pass
-
-
-class AssemblerError(Exception):
-    pass
-
-
-class LinkerError(Exception):
-    pass
-
-
-class WavWriterError(Exception):
-    pass
-
 
 # Wow, I can not begin to comprehend how an unsuitable Moloch like
 # the Windows registry is considered useful by some individuals.
@@ -56,7 +38,7 @@ WindowsSdkLibPath: Path = Path(windowsSdkInstallFolder) / 'Lib' / '{}.0'.format(
 
 class Sointu:
     @staticmethod
-    def yamlToWave(yaml: str) -> bytes:
+    def yamlToWave(yaml: str, deps: Dict[Dependency, Path]) -> bytes:
         outputDirectory: TemporaryDirectory = TemporaryDirectory()
 
         # Write yaml file.
@@ -66,7 +48,7 @@ class Sointu:
         # Compile yaml file using sointu.
         track_asm_file: Path = Path(outputDirectory.name) / 'music.asm'
         result: CompletedProcess = run([
-            Dependencies[Dependency.Sointu],
+            deps[Dependency.Sointu],
             '-arch', '386',
             '-e', 'asm,inc',
             '-o', track_asm_file,
@@ -80,7 +62,7 @@ class Sointu:
         wav_obj_file: Path = Path(outputDirectory.name) / 'wav.obj'
         wav_file: Path = Path(outputDirectory.name) / 'music.wav'
         result: CompletedProcess = run([
-            Dependencies[Dependency.Nasm],
+            deps[Dependency.Nasm],
             '-f', 'win32',
             '-I', Path(outputDirectory.name),
             wav_asm_file,
@@ -94,7 +76,7 @@ class Sointu:
         # Assemble track.
         track_obj_file: Path = Path(outputDirectory.name) / 'music.obj'
         result: CompletedProcess = run([
-            Dependencies[Dependency.Nasm],
+            deps[Dependency.Nasm],
             '-f', 'win32',
             '-I', Path(outputDirectory.name),
             track_asm_file,
@@ -106,7 +88,7 @@ class Sointu:
         # are not escaped properly. How annoying can it get?!
         wav_exe = Path(outputDirectory.name) / 'wav.exe'
         result: CompletedProcess = run(' '.join(map(str, [
-            Dependencies[Dependency.Crinkler],
+            deps[Dependency.Crinkler],
             '/LIBPATH:"{}"'.format(Path(outputDirectory.name)),
             '/LIBPATH:"{}"'.format(WindowsSdkLibPath),
             wav_obj_file,
@@ -130,13 +112,25 @@ class Sointu:
 
 
 if __name__ == '__main__':
+    downloader = Downloader()
+
     instrument: Instrument = Instrument.parse(Path(files(templates) / 'instrument.yml').read_text())
 
     sequenceObject = safe_load(Path(files(templates) / 'sequence.yml').read_text())
     sequenceObject['patch'] = [instrument.serialize()] + sequenceObject['patch']
     print(dump(sequenceObject, indent=2))
 
-    Path(files(templates) / 'test.wav').write_bytes(Sointu.yamlToWave(dump(sequenceObject)))
+    Path(files(templates) / 'test.wav').write_bytes(
+        Sointu.yamlToWave(
+            dump(sequenceObject),
+            downloader.dependencies
+        )
+    )
 
     # print(instrument.randomize())
-    # print(Sointu.yamlToWave(Path(files(templates) / '21.yml').read_text()))
+    # print(
+    #     Sointu.yamlToWave(
+    #         Path(files(templates) / '21.yml').read_text(),
+    #         downloader.dependencies
+    #     )
+    # )

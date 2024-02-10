@@ -8,6 +8,7 @@ from server.repositories.rating import RatingRepository
 from server.repositories.user import UserRepository
 from server.service.files import FilesService
 from server.service.sointu import SointuService
+from server.sointu.downloader import Downloader
 
 
 class Container(containers.DeclarativeContainer):
@@ -53,7 +54,12 @@ class Container(containers.DeclarativeContainer):
         rating_repository=rating_repository
     )
 
+    downloader = providers.Singleton(
+        Downloader
+    )
+
     sointu_service = providers.Factory(
         SointuService,
-        config=config
+        config=config,
+        downloader=downloader
     )

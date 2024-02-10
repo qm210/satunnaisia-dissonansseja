@@ -4,6 +4,11 @@ from typing import Optional, List
 
 
 class FilesService:
+    """
+    This service is the one dealing with the _output_ files from sointu.
+    i.e. to handle what sointu has written and give it to the rating api
+    """
+
     def __init__(self, config, rating_repository):
         # this should only hold constant configuration information
         # no state on a request basis!

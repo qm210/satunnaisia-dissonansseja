@@ -1,9 +1,6 @@
-import ctypes
-
-
 class SointuService:
-    def __init__(self, config):
+    def __init__(self, config, downloader):
         self.config = config
 
-    def debug(self):
+    def write_test(self):
         return "Not implemented yet"
