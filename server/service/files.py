@@ -15,23 +15,23 @@ class FilesService:
         result = {}
         for item in folder.glob("**/*.wav"):
             file = item.relative_to(folder)
+            path = file.as_posix()
 
             if except_files:
-                check_file = file.as_posix()
-                if check_file in except_files:
+                if path in except_files:
                     continue
 
             tag = '/'.join(file.parts[:-1]) \
                 if len(file.parts) > 1 else ""
             file_info = {
-                'path': item.as_posix(),
+                'path': path,
                 'name': str(file.parts[-1].split(".")[0]),
                 'tag': tag
             }
             if tag not in result:
                 result[tag] = []
             result[tag].append(file_info)
-        print(result, except_files)
+
         return list(map(
             lambda t: {'tag': t[0], 'files': t[1]},
             result.items()

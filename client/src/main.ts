@@ -14,7 +14,7 @@ Alpine.plugin(PineconeRouter);
 Alpine.plugin(Persist);
 AsyncAlpine.init(Alpine);
 
-initWindow();
+initWindow(Alpine);
 initStores();
 
 const root =

@@ -27,6 +27,14 @@ def get_unrated_wavs(username, files_service=Provide[Container.files_service]):
     return files_service.get_unrated_wavs_for(username)
 
 
+@api.route('/rated', methods=['DELETE'])
+@inject
+def delete_all_ratings_for_user(rating_repository=Provide[Container.rating_repository]):
+    username = request.args.get('username')
+    number_deleted = rating_repository.delete_all_ratings_for_user(username)
+    return str(number_deleted), 200
+
+
 @api.route('/wav/<path:file>', methods=['GET'])
 @inject
 def play_single_wav(file, files_service=Provide[Container.files_service]):

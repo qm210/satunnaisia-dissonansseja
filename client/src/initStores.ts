@@ -1,8 +1,8 @@
 import Alpine from "alpinejs";
-import type { Rating } from "./types";
+import type { Rating, TaggedFile } from "./types";
 import { Rated } from "./enums.ts";
-import { Message, MessageStore, RatingsStore } from "./stores";
-import { milliseconds } from "./utils/types";
+import { MessageStore, RatingsStore } from "./stores";
+import { Message, milliseconds } from "./utils/types";
 
 // try not to spread the store keys all over the code...
 enum StoreKey {
@@ -23,6 +23,10 @@ export const initStores = () => {
         unsaved: Alpine.$persist<Rating[]>(
             []
         ).as("satan.ratings.unsaved"),
+
+        playQueue: Alpine.$persist<TaggedFile[]>(
+            []
+        ).as("satan.ratings.playQueue"),
 
         alreadyRated(this: RatingsStore, file: string): Rating | null {
             return this.unsaved
@@ -56,6 +60,7 @@ export const initStores = () => {
                     .filter((r: Rating) => r.file !== file);
             }
         }
+
     });
 
     Alpine.store(StoreKey.Messages, {
@@ -91,3 +96,8 @@ export const getUserName = () =>
 
 export const messageStore = () =>
     Alpine.store(StoreKey.Messages) as MessageStore;
+
+// can also access this e.g. via this.$store.ratings.unsaved,
+// but maybe you have then to ensure this.store! or... idk man
+export const ratingsStore = () =>
+    Alpine.store(StoreKey.Ratings) as RatingsStore;

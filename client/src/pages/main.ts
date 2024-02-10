@@ -2,13 +2,17 @@ import FilesListPage from "./files.ts";
 import CurrentWavPage from "./currentWav.ts";
 import UnsavedRatings from "./unsavedRatings.ts";
 import LoginPage from "./login";
-import { messageStore } from "../initStores.ts";
-import Alpine from "alpinejs";
+import { Point } from "../utils/types";
 
 
-(window as any).debug = () => {
-    console.log("Message Store", Alpine.raw(messageStore()));
-};
+(window as any).contextMenuStyle = (pos: Point) => `
+    position: fixed;
+    left: ${pos.x ?? 0}px;
+    top: ${pos.y}px;
+    background-color: #bebebece;
+    border-radius: 4px;
+    padding: 4px;
+`;
 
 const MessageList = () => `
     <div
@@ -77,14 +81,54 @@ export default () => `
 
 function NameTag() {
     return `
-        <div class="absolute bottom-6 left-6">
-            <span @dblclick="debug()" class="select-none">
+        <div
+            class="absolute bottom-6 left-6"
+            x-data="{
+                showMenu: false,
+                menuPos: {x: 0, y: 0},
+                toggleMenu: function(event) {
+                    event.preventDefault();
+                    this.menuPos = clientPos(event);
+                    this.$nextTick(() => {
+                        this.showMenu = !this.showMenu;
+                    });
+                },
+                deleteAllRatings() {
+                    deleteWithParams('/api/rated', {username: $store.user.name})
+                    .then((nDeleted) => {
+                        alert('Deleted ' + labelledCount(nDeleted, 'rating'));
+                        location.reload();
+                    });
+                }
+            }"
+            @contextmenu="toggleMenu"
+            @contextmenu.window="showMenu = false;"     
+            @click.outside="showMenu = false;"       
+            @click="showMenu = false;"
+        >
+            <span class="select-none">
                 Username:
             </span>
             <a
                 href="/change-user"
                 x-text="$store.user.name"
-            />
+            >
+            </a>
+            <div
+                x-show="showMenu"
+                :style="contextMenuStyle(menuPos)"
+            >
+                <button
+                    class="flex gap-4"
+                    @click="deleteAllRatings()"
+                >
+                    <trash-icon></trash-icon>
+                    <span
+                        x-html="'Delete All Ratings For <b>' + $store.user.name + '</b>'"
+                    >
+                    </span>
+                </button>
+            </div>
         </div>
     `;
 }

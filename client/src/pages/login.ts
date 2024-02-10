@@ -13,7 +13,7 @@ export default () => `
                     if ($router.currentRoute === '/') {
                         location.reload();
                     } else {
-                        $router.navigate('/');            
+                        $router.navigate('/');
                     }
                     postJson('/api/user', {username: this.name});
                 }

@@ -1,5 +1,13 @@
-export type HasRoot = {
-    $root: HTMLElement
+export type milliseconds = number;
+
+export type Message = {
+    id: number,
+    title: string,
+    subtitle: string,
+    color: string,
 };
 
-export type milliseconds = number;
+export type Point = {
+    x: number,
+    y: number
+};

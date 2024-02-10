@@ -1,67 +1,153 @@
-(window as any).labelledCount = (list: any[], singular: string, plural?: string) => {
-    if (plural === undefined) {
-        plural = singular + "s";
-    }
-    const unit = Math.abs(list.length) === 1
+import { Component, Rating, TaggedFileGroup, WithInit } from "../types";
+import Alpine from "alpinejs";
+import { getUserName, ratingsStore } from "../initStores.ts";
+
+const labelledCount = (count: any[] | string | number, singular: string, plural?: string) => {
+    plural ??= singular + "s";
+    const length = count instanceof Array
+        ? count.length
+        : +count;
+    const unit = Math.abs(length) === 1
         ? singular
         : plural;
-    return `${list.length} ${unit}`;
+    return `${length} ${unit}`;
 };
+
+// to use it from alpine inline-javascript
+(window as any).labelledCount = labelledCount;
+
+const countFiles = (groups: TaggedFileGroup[]) =>
+    groups.reduce(
+        (sum: number, item: TaggedFileGroup) => sum + item.files.length, 0
+    );
+
+const takeUnrated = (groups: TaggedFileGroup[], unsavedButRated: Rating[]) => {
+    const unsavedButRatedFiles = unsavedButRated.map(r => r.file);
+    return groups.map(group => ({
+        ...group,
+        files: group.files.filter(file =>
+            !unsavedButRatedFiles.includes(file.path)
+        )
+    })).filter(group => group.files.length > 0);
+};
+
+type FilesListData = {
+    allGroups: TaggedFileGroup[],
+    unratedGroups: TaggedFileGroup[],
+    isSubmitting: boolean,
+    isLoading: boolean,
+    nFilesLastTime: number | null,
+    fetch: () => void,
+    submit: () => void,
+    discard: () => void,
+    startPlayGroup: (group: TaggedFileGroup) => void,
+};
+
+const updateUnrated = (data: Component<FilesListData>) =>
+    () => {
+        data.unratedGroups = takeUnrated(
+            data.allGroups,
+            data.$store!.ratings.unsaved
+        );
+    };
+
+Alpine.data("filesList", (): WithInit<FilesListData> => ({
+    allGroups: [],
+    unratedGroups: [],
+    isSubmitting: false,
+    isLoading: true,
+    nFilesLastTime: null,
+
+    init(this: Component<FilesListData>) {
+        this.$store.ratings.playQueue = [];
+        this.fetch();
+        this.$watch("allGroups", updateUnrated(this));
+        this.$watch("$store.ratings.unsaved", updateUnrated(this));
+    },
+
+    fetch: function(this: Component<FilesListData>) {
+        this.isLoading = true;
+        window.fetchJson("/api/unrated/" + getUserName())
+            .then(res => {
+                this.allGroups = res;
+                const nFiles = countFiles(res);
+                if (nFiles !== this.nFilesLastTime) {
+                    this.$store.messages.add(
+                        labelledCount(nFiles, "file") + " unrated files found",
+                        5000
+                    );
+                    this.nFilesLastTime = nFiles;
+                }
+            })
+            .finally(() => {
+                this.isLoading = false;
+            });
+    },
+
+    submit: function(this: Component<FilesListData>) {
+        this.isSubmitting = true;
+        window.postJson<any, number[]>("/api/ratings", {
+            ratings: this.$store.ratings.unsaved,
+            username: getUserName()
+        })
+            .then((ids) => {
+                this.$store.ratings.clear();
+                this.$store.messages.add(
+                    labelledCount(ids!, "rating") + " for "
+                    + this.$store.user.name + " stored",
+                    3000
+                );
+            })
+            .catch((err) => {
+                console.error(err);
+            })
+            .finally(() => {
+                this.isSubmitting = false;
+            });
+    },
+
+    discard: function(this: Component<FilesListData>) {
+        if (!window.confirm("Discard every rating, all the hard work you put into it? Do you value your life so litte, your opinion so unworthy, your time so abundant? You sure, go ahead?")) {
+            return;
+        }
+        this.$store.ratings.clear();
+    },
+
+    startPlayGroup: function(this: Component<FilesListData>, group: TaggedFileGroup) {
+        const first = group.files[0];
+        if (!first) {
+            alert("Empty Group! Can't do shit!");
+            return;
+        }
+        ratingsStore().playQueue = group.files;
+        this.$router.navigate("/wav/" + first.path);
+    }
+}));
 
 export default () => `
     <div
         class="flex flex-col w-full h-full"
-        x-data="{
-            submitting: false,
-            
-            submit: async function () {
-                this.submitting = true;
-                postJson('/api/ratings', {
-                    ratings: $store.ratings.unsaved,
-                    username: $store.user.name,
-                })
-                    .then((ids) => {
-                        $store.ratings.clear();
-                        $store.messages.add(
-                            labelledCount(ids, 'rating') + ' for ' + $store.user.name + ' stored',
-                            3000
-                        );
-                    })
-                    .catch((err) => {
-                        console.error(err);
-                    })
-                    .finally(() => {
-                        this.submitting = false;
-                    });
-            },
-            
-            discard: function() {
-                if (!window.confirm('Discard every rating, all the hard work you put into it? Do you value your life so litte, your opinion so unworthy, your time so abundant? You sure, go ahead?')) {
-                    return;
-                }
-                $store.ratings.clear();
-            }
-        }"
+        x-data="filesList"
     >
         <div
             x-show="$store.ratings.unsaved.length > 0"
             class="flex-end flex items-center border border-black p-1 m-2 shadow-md"
         >
             <div
-                x-show="submitting"
+                x-show="isSubmitting"
                 class="flex-grow justify-self-center p-2"
             >
                 <loading-icon spin="2s"></loading-icon>
             </div>
             <a
                 href="/unsaved"
-                x-show="!submitting"
+                x-show="!isSubmitting"
                 class="flex-grow text-lg cursor-pointer"
                 x-text="labelledCount($store.ratings.unsaved, 'Unsaved Rating')"
             >
             </a>
             <div
-                x-show="!submitting" 
+                x-show="!isSubmitting" 
                 class="flex-end"
             >
                 <button @click="submit()">
@@ -72,23 +158,14 @@ export default () => `
                 </button>
             </div>
         </div>
-        <div
-            x-data="
-                {data: [], isLoading: true}
-            "
-            x-init="
-                fetchJson('/api/unrated/' + $store.user.name)
-                .then(res => {data = res; isLoading = false;});
-                "
-            class="flex-grow h-full flex flex-col overflow-y-hidden"
-            >
+        <div class="flex-grow h-full flex flex-col overflow-y-hidden">
             <h3 x-show="isLoading">
                 Loading...
             </h3>
             <div class="flex-grow w-full">
                 <table class="w-full flex-grow">
                 <tbody>
-                    <template x-for="taggedGroup in data">
+                    <template x-for="taggedGroup in unratedGroups">
                     <tr class="align text-lg">
                         <td
                             x-text="taggedGroup.tag || 'UNTAGGED'"
@@ -98,7 +175,7 @@ export default () => `
                             class="sticky left-24 bg-white"
                             >
                             <button
-                                @click="alert('play-multiple-wav is not implemented yet.')"
+                                @click="startPlayGroup(taggedGroup)"
                                 class="px-1 pt-2 pb-0"
                             >
                                 <play-icon></play-icon>
@@ -110,7 +187,7 @@ export default () => `
                             <div class="flex space-x-4">
                                 <template x-for="file in taggedGroup.files">
                                     <a
-                                        x-bind:href="'/' + file.path"
+                                        x-bind:href="'/wav/' + file.path"
                                         x-text="file.name"
                                         class="underline"
                                     />

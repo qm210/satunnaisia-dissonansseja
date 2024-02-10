@@ -9,12 +9,15 @@ import {
     TrashIcon
 } from "./components/icons.ts";
 import { Context } from "pinecone-router/dist/types";
+import { Point } from "./utils/types";
+import Alpine from "alpinejs";
 
 export type AppRouter = { [handler: string]: (ctx: Context) => void };
 
 declare global {
     interface Window {
         // setup
+        Alpine: typeof Alpine, // this is just useful for Console debugging
         $router?: typeof Proxy,
         defaultRouter: AppRouter,
 
@@ -22,7 +25,9 @@ declare global {
         fetchJson: <R = any>(url: string) => Promise<R | null>;
         fetchIntoAudioPlayer: (url: string) => Promise<HTMLAudioElement>;
         postJson: <T extends object | void = void, R = void>(url: string, body: T) => Promise<R | undefined>;
+        deleteWithParams: (url: string, params: Record<string, string>) => Promise<any>;
         setDebounced: (callback: () => void) => void;
+        clientPos: (event: MouseEvent) => Point;
     }
 }
 
@@ -37,7 +42,9 @@ class StatusError extends Error {
 
 // this extends the window object with somewhat that is our own global library.
 // we need this to call functions like fetchJson() from the x-init parts
-export const initWindow = () => {
+export const initWindow = (alpine: typeof Alpine) => {
+
+    window.Alpine = alpine;
 
     window.defaultRouter = {
         notFound: (context: Context) => {
@@ -77,6 +84,19 @@ export const initWindow = () => {
             return content<R>(response);
         } catch (err) {
             console.warn("postJson ERROR", url, body, err);
+        }
+    };
+
+    window.deleteWithParams = async <T extends Record<string, string>, R = void>(url: string, params: T) => {
+        const query = (new URLSearchParams(params)).toString();
+        const fullUrl = `${url}?${query}`;
+        try {
+            const response = await fetch(fullUrl, {
+                method: "DELETE"
+            });
+            return content<R>(response);
+        } catch (err) {
+            console.warn("deleteWithParams ERROR", fullUrl, params);
         }
     };
 
@@ -126,6 +146,13 @@ export const initWindow = () => {
             callback();
             timeout = undefined;
         }, 250);
+    };
+
+    window.clientPos = (event: MouseEvent): Point => {
+        return {
+            x: event.clientX,
+            y: event.clientY
+        };
     };
 };
 

@@ -1,7 +1,9 @@
 import { WithMenu } from "../components/withMenu.ts";
 import { Rated, ratedProps } from "../enums.ts";
 import Alpine from "alpinejs";
-import { Rating } from "../types";
+import { Component, Rating, TaggedFile, WithInit } from "../types";
+import { ratingsStore } from "../initStores.ts";
+import { RatingsStore } from "../stores";
 
 
 (window as any).Rated = Rated;
@@ -20,11 +22,74 @@ Alpine.data("initCurrentWav", (alreadyRated: Rating | null) => ({
         )
 }));
 
+type CurrentWavData = {
+    audioPlayer: HTMLAudioElement | null,
+    isLoading: boolean,
+    error: any,
+    nextFile: string,
+    rate: (r: Rated) => void,
+};
+
+const discardPreviousElements = (queue: TaggedFile[], current: string) => {
+    const currentIndex = queue.findIndex(file =>
+        file.path === current
+    );
+    queue.splice(0, currentIndex);
+};
+
+const initNextFile = (data: Component<CurrentWavData>, currentPath: string) => {
+    const queue = data.$store.ratings.playQueue;
+    discardPreviousElements(queue, currentPath);
+    data.nextFile = queue[1]?.path ?? "";
+};
+
+Alpine.data("currentWav", (): WithInit<CurrentWavData> => ({
+    audioPlayer: null,
+    isLoading: true,
+    error: null,
+    nextFile: "",
+
+    init: function(this: Component<CurrentWavData>) {
+        const file = this.$router.params.file;
+        initNextFile(this, file);
+        window.fetchIntoAudioPlayer("/api/wav/" + file)
+            .then(player => {
+                this.audioPlayer = player;
+                this.audioPlayer.play();
+            })
+            .catch((err) => {
+                this.error = err.message ?? "Unknown Error";
+                if (err.status === 404) {
+                    this.error = "404 Not Found";
+                }
+            })
+            .finally(() => {
+                this.isLoading = false;
+            });
+        this.$watch("$router.currentRoute", () => {
+            this.init!();
+        });
+    },
+
+    rate: function(this: Component<CurrentWavData>, r: Rated) {
+        ratingsStore().setRated(this.$router.params.file, r);
+        if (ratingsStore().playQueue.length === 0) {
+            history.back();
+        } else if (!this.nextFile) {
+            this.$router.navigate("/");
+        } else {
+            ratingsStore().playQueue.shift();
+            this.$router.navigate("/wav/" + this.nextFile);
+            this.nextFile = this.$store.ratings.playQueue[1]?.path ?? "";
+        }
+    }
+}));
+
 export default () =>
     WithMenu({
         left: [{
             label: "To Index",
-            onClick: "$router.navigate('/')"
+            onClick: "$router.navigate('/');"
         }],
         right: [{
             label: "Back",
@@ -32,38 +97,27 @@ export default () =>
         }],
         content: `
             <div
-                x-data="{
-                    audioPlayer: null,
-                    isLoading: true,
-                    error: null,
-                    
-                    rate: (r) => {
-                      $store.ratings.setRated($router.params.file, r);
-                      history.back()
-                    }
-                }"
-                x-init="
-                    fetchIntoAudioPlayer('/api/wav/' + $router.params.file)
-                    .then(player => {
-                        audioPlayer = player;
-                        audioPlayer.play();
-                    })
-                    .catch((err) => {
-                        error = err.message ?? 'Unknown Error';
-                        if (err.status === 404) {
-                            error = '404 Not Found';
-                        }
-                    })
-                    .finally(() => {
-                        isLoading = false;
-                    });
-                "
+                x-data="currentWav"
                 class="text-xl flex flex-col items-center justify-center h-full"
             >
                 <div x-text="$router.params.file" class="mt-4"></div>
                 <div
-                    x-show="error !== null" class="flex-grow flex flex-col justify-center h-full gap-4"
-                    @click="$router.navigate('/')"                
+                    x-show="nextFile"
+                    class="text-xs mt-1"
+                >
+                    <span>
+                        Playing next:
+                    </span>
+                    <a
+                        x-bind:href="'/wav/' + nextFile"
+                        x-text="nextFile"
+                    >
+                    </a>
+                </div>
+                <div
+                    x-show="error !== null" 
+                    class="flex-grow flex flex-col justify-center h-full gap-4"
+                    @click="$router.navigate('/')"
                 >
                     <ban-icon size="6rem" color="red"></ban-icon>
                     <div x-text="error">
