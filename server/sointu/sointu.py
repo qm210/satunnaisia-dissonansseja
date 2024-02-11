@@ -19,9 +19,9 @@ from winreg import (
     QueryValueEx,
 )
 
-from server.model.error import SointuCompileError, AssemblerError, LinkerError, WavWriterError
+from server.sointu.error import SointuCompileError, AssemblerError, LinkerError, WavWriterError
 from server.sointu.downloader import Downloader
-from unit import Instrument
+from server.sointu.instrument import Instrument
 from yaml import safe_load, dump
 
 # Wow, I can not begin to comprehend how an unsuitable Moloch like

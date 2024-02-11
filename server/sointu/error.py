@@ -12,3 +12,7 @@ class LinkerError(Exception):
 
 class WavWriterError(Exception):
     pass
+
+
+class InstrumentFormatError(Exception):
+    pass

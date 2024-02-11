@@ -12,14 +12,13 @@ class FilesService:
     def __init__(self, config, rating_repository):
         # this should only hold constant configuration information
         # no state on a request basis!
-        self.wav_folder = config["wav"]["folder"]
+        self.wav_folder = Path(config["wav"]["folder"])
         self.rating_repository = rating_repository
 
     def get_all_wavs(self, except_files: Optional[List[string]] = None):
-        folder = Path(self.wav_folder)
         result = {}
-        for item in folder.glob("**/*.wav"):
-            file = item.relative_to(folder)
+        for item in self.wav_folder.glob("**/*.wav"):
+            file = item.relative_to(self.wav_folder)
             path = file.as_posix()
 
             if except_files:
@@ -50,5 +49,5 @@ class FilesService:
         return self.get_all_wavs(except_files=all_rated)
 
     def get_single_wav_path(self, file: string) -> Optional[string]:
-        result = Path(self.wav_folder) / Path(file)
+        result = self.wav_folder / Path(file)
         return result.resolve() if result.exists() else None

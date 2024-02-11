@@ -19,7 +19,14 @@ class Container(containers.DeclarativeContainer):
                 "file": "db/db.sqlite3"
             },
             "wav": {
-                "folder": "wav"
+                "folder": "wav",
+                "test_wav": "test.wav"
+            },
+            "templates": {
+                "folder": "templates",
+                "instrument": "instrument.yml",
+                "sequence": "sequence.yml",
+                "asm": "wav.asm"
             }
         }
     )
@@ -61,5 +68,6 @@ class Container(containers.DeclarativeContainer):
     sointu_service = providers.Factory(
         SointuService,
         config=config,
+        root_path=app.provided.root_path(),
         downloader=downloader
     )

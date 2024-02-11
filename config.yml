@@ -2,3 +2,9 @@ db:
   file: "db/db.sqlite3"
 wav:
   folder: "wav/"
+  test_wav: "test.wav"
+template:
+  folder: "templates/"
+  instrument: "./instrument.yml"
+  sequence: "./sequence.yml"
+  asm: "./wav.asm"
