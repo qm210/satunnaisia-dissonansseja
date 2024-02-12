@@ -1,7 +1,8 @@
 import FilesListPage from "./files.ts";
 import CurrentWavPage from "./currentWav.ts";
 import UnsavedRatings from "./unsavedRatings.ts";
-import LoginPage from "./login";
+import LoginPage from "./login.ts";
+import ExecuteSointuPage from "./executeSointu.ts";
 import { Point } from "../utils/types";
 
 
@@ -73,6 +74,11 @@ export default () => `
                 ${LoginPage()}
             </div>
         </template>
+        <template x-route="/execute">
+            <div class="contents">
+                ${ExecuteSointuPage()}
+            </div>        
+        </template>
         <template x-route="notfound" x-handler="notFound">
         </template>
     </div>
@@ -132,11 +138,11 @@ function NameTag() {
                 </button>
                 <button
                     class="flex gap-4"
-                    @click="postJson('/api/sointu/try-execute').catch(alert)"
+                    @click="$router.navigate('/execute')"
                 >
                     <audiofile-icon></audiofile-icon>
                     <span>
-                        Call some sointu endpoint just for fun
+                        Go to Sointu Execution mode
                     </span>
                 </button>
             </div>

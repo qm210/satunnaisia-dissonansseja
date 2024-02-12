@@ -2,8 +2,8 @@ db:
   file: "db/db.sqlite3"
 wav:
   folder: "wav/"
-  test_wav: "test.wav"
 template:
+  # "folder" cannot be used yet, see comment in SointuService
   folder: "templates/"
   instrument: "./instrument.yml"
   sequence: "./sequence.yml"

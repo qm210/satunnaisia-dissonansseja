@@ -20,7 +20,6 @@ class Container(containers.DeclarativeContainer):
             },
             "wav": {
                 "folder": "wav",
-                "test_wav": "test.wav"
             },
             "templates": {
                 "folder": "templates",
@@ -68,6 +67,6 @@ class Container(containers.DeclarativeContainer):
     sointu_service = providers.Factory(
         SointuService,
         config=config,
-        root_path=app.provided.root_path(),
+        app_path=app.provided.root_path(),
         downloader=downloader
     )

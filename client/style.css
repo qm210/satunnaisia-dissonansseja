@@ -678,6 +678,10 @@ video {
   flex-wrap: nowrap;
 }
 
+.items-start {
+  align-items: flex-start;
+}
+
 .items-center {
   align-items: center;
 }
@@ -852,9 +856,19 @@ video {
   color: rgb(209 213 219 / var(--tw-text-opacity));
 }
 
+.text-green-950 {
+  --tw-text-opacity: 1;
+  color: rgb(5 46 22 / var(--tw-text-opacity));
+}
+
 .text-red-400 {
   --tw-text-opacity: 1;
   color: rgb(248 113 113 / var(--tw-text-opacity));
+}
+
+.text-red-950 {
+  --tw-text-opacity: 1;
+  color: rgb(69 10 10 / var(--tw-text-opacity));
 }
 
 .underline {

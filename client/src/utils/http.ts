@@ -7,7 +7,7 @@ export const checkOk = async (promise: Promise<Response>) => {
 };
 
 
-class StatusError extends Error {
+export class StatusError extends Error {
     public status: number | undefined;
 
     constructor({ statusText, status }: { statusText?: string, status?: number }) {

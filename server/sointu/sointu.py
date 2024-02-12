@@ -1,3 +1,4 @@
+from collections.abc import Generator
 from typing import Dict
 
 from server.sointu.dependency import (
@@ -24,6 +25,8 @@ from server.sointu.downloader import Downloader
 from server.sointu.instrument import Instrument
 from yaml import safe_load, dump
 
+from server.sointu.sointu_message import SointuMessage
+
 # Wow, I can not begin to comprehend how an unsuitable Moloch like
 # the Windows registry is considered useful by some individuals.
 # I do not want to write or maintain any of the bloated code below.
@@ -38,7 +41,15 @@ WindowsSdkLibPath: Path = Path(windowsSdkInstallFolder) / 'Lib' / '{}.0'.format(
 
 class Sointu:
     @staticmethod
-    def yamlToWave(yaml: str, deps: Dict[Dependency, Path]) -> bytes:
+    def run_and_yield_output(*args, **kwargs) -> Generator[SointuMessage]:
+        yield SointuMessage.Log(" ".join(args[0]))
+        result = run(*args, **kwargs, capture_output=True, text=True)
+        for line in result.stdout.splitlines():
+            yield SointuMessage.Log(line + '\n')
+        yield SointuMessage.RunReturnCode(result.returncode)
+
+    @staticmethod
+    def yamlToWave(yaml: str, deps: Dict[Dependency, Path], wav_asm_file: Path) -> Generator[SointuMessage]:
         outputDirectory: TemporaryDirectory = TemporaryDirectory()
 
         # Write yaml file.
@@ -58,7 +69,6 @@ class Sointu:
             raise SointuCompileError('Could not compile track: {}.'.format(yaml_file))
 
         # Assemble the wav writer.
-        wav_asm_file: Path = Path(files(templates) / 'wav.asm')
         wav_obj_file: Path = Path(outputDirectory.name) / 'wav.obj'
         wav_file: Path = Path(outputDirectory.name) / 'music.wav'
         result: CompletedProcess = run([

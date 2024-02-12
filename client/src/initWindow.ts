@@ -44,6 +44,7 @@ export const initWindow = (alpine: typeof Alpine) => {
 
     window.defaultRouter = {
         notFound: (context: Context) => {
+            console.log("Route not defined: ", context.path);
             context.redirect("/");
         }
     };
