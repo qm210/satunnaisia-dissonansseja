@@ -73,7 +73,7 @@ export default () => `
         <h2 class="m-2 font-bold" style="color: green" x-show="done">
             Execution finished.
         </h2>
-        <div class="flex-grow flex flex-col w-full items-start m-2 overflow-auto">
+        <div class="flex-grow flex flex-col w-full items-start p-2 overflow-auto">
             <template x-for="line in log">
                 <pre x-text="line"></pre>
             </template>
