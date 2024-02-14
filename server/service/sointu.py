@@ -64,9 +64,10 @@ class SointuService:
             if isinstance(message, SointuMessage.WavResult):
                 wav_data = message.payload
         (self.wav_path / filename).write_bytes(wav_data)
-        # return something? -> third type in Generator[...,...,None]
+        # return something? -> third type in Generator[..., ..., None]
 
-    def run_some_testing(self) -> Generator[string, None, None]:
+    @staticmethod
+    def run_some_testing() -> Generator[string, None, None]:
         commands = [["pwd"], ["ls"]]
         for command in commands:
             for message in Sointu.run_and_yield_output(command):

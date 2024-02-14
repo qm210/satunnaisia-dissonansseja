@@ -14,8 +14,9 @@ const initStream = async (url: string, onMessage: (msg: string) => void, onClose
     const decoder = new TextDecoder("utf-8");
     const stream = new ReadableStream({
         async start(controller) {
-            while (true) {
-                const { done, value } = await reader.read();
+            for (; ;) {
+                const { done, value } =
+                    await reader.read();
                 if (done) {
                     onClose();
                     controller.close();
