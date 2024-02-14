@@ -6,7 +6,7 @@ import {
     LameIcon, LoadingIcon,
     PlayIcon,
     PoopIcon,
-    SaveIcon,
+    SaveIcon, ToolsIcon,
     TrashIcon
 } from "./components/icons.ts";
 import { Context } from "pinecone-router/dist/types";
@@ -145,4 +145,5 @@ const initCustomElements = () => {
     customElements.define("save-icon", SaveIcon);
     customElements.define("loading-icon", LoadingIcon);
     customElements.define("audiofile-icon", AudioFileIcon);
+    customElements.define("tools-icon", ToolsIcon);
 };

@@ -17,13 +17,13 @@ def some_bullshit_but_glad_that_i_am_alive():
 
 @api.route('/all', methods=['GET'])
 @inject
-def all_wavs(files_service=Provide[Container.files_service]):
-    return files_service.get_all_wavs()
+def all_wavs(files_service=Provide[Container.wav_files_service]):
+    return files_service.read_subfolders_as_tags()
 
 
 @api.route('/unrated/<username>', methods=['GET'])
 @inject
-def get_unrated_wavs(username, files_service=Provide[Container.files_service]):
+def get_unrated_wavs(username, files_service=Provide[Container.wav_files_service]):
     return files_service.get_unrated_wavs_for(username)
 
 
@@ -37,7 +37,7 @@ def delete_all_ratings_for_user(rating_repository=Provide[Container.rating_repos
 
 @api.route('/wav/<path:file>', methods=['GET'])
 @inject
-def play_single_wav(file, files_service=Provide[Container.files_service]):
+def play_single_wav(file, files_service=Provide[Container.wav_files_service]):
     path = files_service.get_single_wav_path(file)
     if path is None:
         abort(404)

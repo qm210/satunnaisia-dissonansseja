@@ -3,8 +3,9 @@ db:
 wav:
   folder: "wav/"
 template:
-  # "folder" cannot be used yet, see comment in SointuService
   folder: "templates/"
-  instrument: "./instrument.yml"
-  sequence: "./sequence.yml"
-  asm: "./wav.asm"
+  instrument: "./instrument.yml"  # this file will be written by the instruments service
+  sequence: "./sequence.yml"  # doesn't change for now
+  asm: "./wav.asm"  # doesn't change for now
+instruments:
+  folder: "instruments/"

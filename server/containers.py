@@ -6,7 +6,8 @@ from flask_sqlalchemy import SQLAlchemy
 from server.model.base import Base
 from server.repositories.rating import RatingRepository
 from server.repositories.user import UserRepository
-from server.service.files import FilesService
+from server.service.instruments import InstrumentsService
+from server.service.wav_files import WavFilesService
 from server.service.sointu import SointuService
 from server.sointu.downloader import Downloader
 
@@ -19,13 +20,16 @@ class Container(containers.DeclarativeContainer):
                 "file": "db/db.sqlite3"
             },
             "wav": {
-                "folder": "wav",
+                "folder": "wav/",
             },
             "templates": {
-                "folder": "templates",
+                "folder": "server/templates/",
                 "instrument": "instrument.yml",
                 "sequence": "sequence.yml",
                 "asm": "wav.asm"
+            },
+            "instruments": {
+                "folder": "instruments/"
             }
         }
     )
@@ -54,8 +58,8 @@ class Container(containers.DeclarativeContainer):
         session_factory=db.provided.session
     )
 
-    files_service = providers.Factory(
-        FilesService,
+    wav_files_service = providers.Factory(
+        WavFilesService,
         config=config,
         rating_repository=rating_repository
     )
@@ -69,4 +73,11 @@ class Container(containers.DeclarativeContainer):
         config=config,
         app_path=app.provided.root_path(),
         downloader=downloader
+    )
+
+    instruments_service = providers.Factory(
+        InstrumentsService,
+        config=config,
+        logger=app.provided.logger,
+        sointu_service=sointu_service
     )

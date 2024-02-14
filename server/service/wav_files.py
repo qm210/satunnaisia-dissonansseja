@@ -2,8 +2,10 @@ import string
 from pathlib import Path
 from typing import Optional, List
 
+from server.utils.files import read_subfolders_as_tags
 
-class FilesService:
+
+class WavFilesService:
     """
     This service is the one dealing with the _output_ files from sointu.
     i.e. to handle what sointu has written and give it to the rating api
@@ -16,30 +18,7 @@ class FilesService:
         self.rating_repository = rating_repository
 
     def get_all_wavs(self, except_files: Optional[List[string]] = None):
-        result = {}
-        for item in self.wav_folder.glob("**/*.wav"):
-            file = item.relative_to(self.wav_folder)
-            path = file.as_posix()
-
-            if except_files:
-                if path in except_files:
-                    continue
-
-            tag = '/'.join(file.parts[:-1]) \
-                if len(file.parts) > 1 else ""
-            file_info = {
-                'path': path,
-                'name': str(file.parts[-1].split(".")[0]),
-                'tag': tag
-            }
-            if tag not in result:
-                result[tag] = []
-            result[tag].append(file_info)
-
-        return list(map(
-            lambda t: {'tag': t[0], 'files': t[1]},
-            result.items()
-        ))
+        return read_subfolders_as_tags(self.wav_folder, "*.wav", except_files)
 
     def get_unrated_wavs_for(self, username: string):
         all_rated = [

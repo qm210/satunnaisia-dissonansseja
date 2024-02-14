@@ -29,15 +29,15 @@ class Instrument:
 
         return cls(
             yamlObject['name'],
-            *list(map(
-                lambda unitYamlObject: Unit(
+            *[
+                Unit(
                     unitYamlObject['type'],
                     unitYamlObject['id'],
                     unitYamlObject['parameters'],
                     unitYamlObject['varargs'] if 'varargs' in unitYamlObject else None,
-                ),
-                yamlObject['units'],
-            ))
+                )
+                for unitYamlObject in yamlObject['units']
+            ]
         )
 
     def randomize(
@@ -61,7 +61,8 @@ class Instrument:
             'name': self.name,
             'numvoices': 1,
             'units': [
-                unit.serialize() for unit in self.units
+                unit.serialize()
+                for unit in self.units
             ]
         }
 

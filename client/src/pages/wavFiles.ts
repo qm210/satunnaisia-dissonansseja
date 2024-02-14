@@ -31,18 +31,18 @@ const takeUnrated = (groups: TaggedFileGroup[], unsavedButRated: Rating[]) => {
     })).filter(group => group.files.length > 0);
 };
 
-type FilesListData = {
+type WavFilesData = {
     allGroups: TaggedFileGroup[],
     unratedGroups: TaggedFileGroup[],
     isSubmitting: boolean,
     isLoading: boolean,
-    fetch: () => void,
+    load: () => void,
     submit: () => void,
     discard: () => void,
     startQueue: (group: TaggedFileGroup) => void,
 };
 
-const updateUnrated = (data: Component<FilesListData>) =>
+const updateUnrated = (data: Component<WavFilesData>) =>
     () => {
         data.unratedGroups = takeUnrated(
             data.allGroups,
@@ -50,20 +50,20 @@ const updateUnrated = (data: Component<FilesListData>) =>
         );
     };
 
-Alpine.data("filesList", (): WithInit<FilesListData> => ({
+Alpine.data("wavFiles", (): WithInit<WavFilesData> => ({
     allGroups: [],
     unratedGroups: [],
     isSubmitting: false,
     isLoading: true,
 
-    init(this: Component<FilesListData>) {
+    init(this: Component<WavFilesData>) {
         this.$store.ratings.playQueue = [];
-        this.fetch();
+        this.load();
         this.$watch("allGroups", updateUnrated(this));
         this.$watch("$store.ratings.unsaved", updateUnrated(this));
     },
 
-    fetch: function(this: Component<FilesListData>) {
+    load: function(this: Component<WavFilesData>) {
         this.isLoading = true;
         window.fetchJson("/api/unrated/" + getUserName())
             .then(res => {
@@ -82,7 +82,7 @@ Alpine.data("filesList", (): WithInit<FilesListData> => ({
             });
     },
 
-    submit: function(this: Component<FilesListData>) {
+    submit: function(this: Component<WavFilesData>) {
         this.isSubmitting = true;
         window.postJson<any, number[]>("/api/ratings", {
             ratings: this.$store.ratings.unsaved,
@@ -104,14 +104,14 @@ Alpine.data("filesList", (): WithInit<FilesListData> => ({
             });
     },
 
-    discard: function(this: Component<FilesListData>) {
+    discard: function(this: Component<WavFilesData>) {
         if (!window.confirm("Discard every rating, all the hard work you put into it? Do you value your life so litte, your opinion so unworthy, your time so abundant? You sure, go ahead?")) {
             return;
         }
         this.$store.ratings.clear();
     },
 
-    startQueue: function(this: Component<FilesListData>, group: TaggedFileGroup) {
+    startQueue: function(this: Component<WavFilesData>, group: TaggedFileGroup) {
         const first = group.files[0];
         if (!first) {
             alert("Empty Group! Can't do shit!");
@@ -125,7 +125,7 @@ Alpine.data("filesList", (): WithInit<FilesListData> => ({
 export default () => `
     <div
         class="flex flex-col w-full h-full"
-        x-data="filesList"
+        x-data="wavFiles"
     >
         <div
             x-show="$store.ratings.unsaved.length > 0"

@@ -7,6 +7,7 @@ from flask_migrate import Migrate
 from server.api.rating import api as rating_api
 from server.api.sointu import api as sointu_call_api
 from server.containers import Container
+from server.json import JsonProvider
 
 
 def create_app():
@@ -31,6 +32,9 @@ def create_app():
 
     app.register_blueprint(rating_api, url_prefix="/api")
     app.register_blueprint(sointu_call_api, url_prefix="/api/sointu")
+
+    app.json_provider_class = JsonProvider
+    app.json = JsonProvider(app)
 
     @app.route('/')
     def index():

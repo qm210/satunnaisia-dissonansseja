@@ -1,8 +1,9 @@
-import FilesListPage from "./files.ts";
+import WavFilesPage from "./wavFiles.ts";
 import CurrentWavPage from "./currentWav.ts";
 import UnsavedRatings from "./unsavedRatings.ts";
 import LoginPage from "./login.ts";
 import ExecuteSointuPage from "./executeSointu.ts";
+import InstrumentsPage from "./instrumentFiles.ts";
 import { Point } from "../utils/types";
 
 
@@ -55,7 +56,7 @@ export default () => `
     >
         <template x-route="/">
             <div class="contents relative">
-                ${FilesListPage()}
+                ${WavFilesPage()}
                 ${NameTag()}
             </div>
         </template>
@@ -78,6 +79,11 @@ export default () => `
             <div class="contents">
                 ${ExecuteSointuPage()}
             </div>        
+        </template>
+        <template x-route="/instruments">
+            <div class="contents">
+                ${InstrumentsPage()}            
+            </div>
         </template>
         <template x-route="notfound" x-handler="notFound">
         </template>
@@ -138,11 +144,20 @@ function NameTag() {
                 </button>
                 <button
                     class="flex gap-4"
+                    @click="$router.navigate('/instruments')"
+                >
+                    <tools-icon></tools-icon>
+                    <span>
+                        Configure Instruments
+                    </span>
+                </button>
+                <button
+                    class="flex gap-4"
                     @click="$router.navigate('/execute')"
                 >
                     <audiofile-icon></audiofile-icon>
                     <span>
-                        Go to Sointu Execution mode
+                        Go to Sointu Execution mode (not quite implemented yet)
                     </span>
                 </button>
             </div>

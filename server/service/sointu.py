@@ -29,15 +29,8 @@ class TemplatePath:
 class SointuService:
     """
     is the service that calls sointu with the given instrument / sequence settings.
-
-    NOTE:
-    For now, the templates path is not actually configurable due to the
-    "from server import templates"
-    in other files, but we can fix that later on.
-    It would be nice to have it configurable and outside of server/,
-    just like the "wav" entry in config.yml
     """
-
+    
     def __init__(self, config, app_path, downloader):
         self.downloader = downloader
         self.app_path = Path(app_path)
