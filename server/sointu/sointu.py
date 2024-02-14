@@ -62,15 +62,19 @@ class Sointu:
                 return None
 
     @staticmethod
-    def yamlToWave(yaml: str, deps: Dict[Dependency, Path], wav_asm_file: Path) -> Generator[SointuMessage]:
-        outputDirectory: TemporaryDirectory = TemporaryDirectory()
+    def write_wav_file(yaml: str, deps: Dict[Dependency, Path], wav_asm_file: Path) -> Generator[SointuMessage]:
+        temp_path = Path(TemporaryDirectory().name)
+        yaml_file: Path = temp_path / 'music.yml'
+        track_asm_file: Path = temp_path / 'music.asm'
+        wav_obj_file: Path = temp_path / 'wav.obj'
+        wav_file: Path = temp_path / 'music.wav'
+        track_obj_file: Path = temp_path / 'music.obj'
+        wav_exe = temp_path / 'wav.exe'
 
         # Write yaml file.
-        yaml_file: Path = Path(outputDirectory.name) / 'music.yml'
         yaml_file.write_text(yaml)
 
         # Compile yaml file using sointu.
-        track_asm_file: Path = Path(outputDirectory.name) / 'music.asm'
         for message in Sointu.run_and_yield_output(
                 [
                     deps[Dependency.Sointu],
@@ -85,15 +89,13 @@ class Sointu:
                 yield message
 
         # Assemble the wav writer.
-        wav_obj_file: Path = Path(outputDirectory.name) / 'wav.obj'
-        wav_file: Path = Path(outputDirectory.name) / 'music.wav'
         for message in Sointu.run_and_yield_output(
                 [
                     deps[Dependency.Nasm],
                     '-f', 'win32',
-                    '-I', Path(outputDirectory.name),
+                    '-I', temp_path,
                     wav_asm_file,
-                    '-DTRACK_INCLUDE="{}"'.format(Path(outputDirectory.name) / 'music.inc'),
+                    '-DTRACK_INCLUDE="{}"'.format(temp_path / 'music.inc'),
                     '-DFILENAME="{}"'.format(wav_file),
                     '-o', wav_obj_file,
                 ],
@@ -103,12 +105,11 @@ class Sointu:
                 yield message
 
         # Assemble track.
-        track_obj_file: Path = Path(outputDirectory.name) / 'music.obj'
         for message in Sointu.run_and_yield_output(
                 [
                     deps[Dependency.Nasm],
                     '-f', 'win32',
-                    '-I', Path(outputDirectory.name),
+                    '-I', temp_path,
                     track_asm_file,
                     '-o', track_obj_file,
                 ]
@@ -119,11 +120,10 @@ class Sointu:
         # Link wav writer.
         # Note: When using the list based api, quotes in arguments
         # are not escaped properly. How annoying can it get?!
-        wav_exe = Path(outputDirectory.name) / 'wav.exe'
         for message in Sointu.run_and_yield_output(
                 ' '.join(map(str, [
                     deps[Dependency.Crinkler],
-                    '/LIBPATH:"{}"'.format(Path(outputDirectory.name)),
+                    '/LIBPATH:"{}"'.format(temp_path),
                     '/LIBPATH:"{}"'.format(WindowsSdkLibPath),
                     wav_obj_file,
                     track_obj_file,
@@ -162,7 +162,7 @@ if __name__ == '__main__':
     sequenceObject['patch'] = [instrument.serialize()] + sequenceObject['patch']
     print(dump(sequenceObject, indent=2))
 
-    result = Sointu.print_logs_until_wav_result(Sointu.yamlToWave(
+    result = Sointu.print_logs_until_wav_result(Sointu.write_wav_file(
         dump(sequenceObject),
         downloader.dependencies,
         templates / "wav.asm"

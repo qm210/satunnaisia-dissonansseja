@@ -54,7 +54,7 @@ class SointuService:
         instrument = Instrument.parse_file(self.template_path.instrument)
         sequence = self.parse_sequence(instrument)
         wav_data: Optional[bytes] = None
-        for message in Sointu.yamlToWave(
+        for message in Sointu.write_wav_file(
                 dump(sequence),
                 self.downloader.dependencies,
                 self.template_path.wav_asm
