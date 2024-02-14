@@ -1,6 +1,7 @@
 from collections.abc import Generator
 from typing import Dict, Optional
 
+from server.sointu import templates_path
 from server.sointu.dependency import (
     Dependency,
 )
@@ -154,23 +155,22 @@ class Sointu:
 if __name__ == '__main__':
     downloader = Downloader()
 
-    relative_template_path = "../templates"
+    instrument: Instrument = Instrument.parse_file(templates_path / 'instrument.yml')
 
-    templates = (Path(__file__).parent / relative_template_path).resolve()
-    instrument: Instrument = Instrument.parse_file(templates / 'instrument.yml')
-    sequenceObject = safe_load((templates / 'sequence.yml').read_text())
+    sequenceObject = safe_load((templates_path / 'sequence.yml').read_text())
     sequenceObject['patch'] = [instrument.serialize()] + sequenceObject['patch']
     print(dump(sequenceObject, indent=2))
 
-    result = Sointu.print_logs_until_wav_result(Sointu.write_wav_file(
-        dump(sequenceObject),
-        downloader.dependencies,
-        templates / "wav.asm"
-    ))
+    result = Sointu.print_logs_until_wav_result(
+        Sointu.write_wav_file(
+            dump(sequenceObject),
+            downloader.dependencies,
+            templates_path / "wav.asm"
+        ))
     if result is None:
         print("No Wav Result returned.")
     else:
-        (templates / 'test.wav').write_bytes(result)
+        (templates_path / 'test.wav').write_bytes(result)
 
     # print(instrument.randomize())
     # print(

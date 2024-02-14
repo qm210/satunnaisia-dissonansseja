@@ -1,11 +1,9 @@
-from importlib.resources import files
 from importlib.resources.abc import Traversable
-from pathlib import Path
-from typing import Self, List, Dict
+from typing import Self, List, Dict, Optional
 
 from yaml import safe_load
 
-from server import templates
+from server.sointu import templates_path
 from server.sointu.error import InstrumentFormatError
 from server.sointu.unit import Unit
 
@@ -23,47 +21,51 @@ class Instrument:
     def parse(cls: Self, yaml: str) -> Self:
         yamlObject: dict = safe_load(yaml)
 
-        if not 'name' in yamlObject:
+        if 'name' not in yamlObject:
             raise InstrumentFormatError('Instrument YAML does not contain a `name` property.')
 
-        if not 'units' in yamlObject:
+        if 'units' not in yamlObject:
             raise InstrumentFormatError('Instrument YAML does not contain a `units` property.')
 
-        return cls(yamlObject['name'], *list(map(
-            lambda unitYamlObject: Unit(
-                unitYamlObject['type'],
-                unitYamlObject['id'],
-                unitYamlObject['parameters'],
-                unitYamlObject['varargs'] if 'varargs' in unitYamlObject else None,
-            ),
-            yamlObject['units'],
-        )))
+        return cls(
+            yamlObject['name'],
+            *list(map(
+                lambda unitYamlObject: Unit(
+                    unitYamlObject['type'],
+                    unitYamlObject['id'],
+                    unitYamlObject['parameters'],
+                    unitYamlObject['varargs'] if 'varargs' in unitYamlObject else None,
+                ),
+                yamlObject['units'],
+            ))
+        )
 
     def randomize(
             self: Self,
-            ranges: List[Dict[str, List[int]]] = [],
+            ranges: Optional[List[Dict[str, List[int]]]] = None,
     ) -> dict:
+        n_ranges = len(ranges or [])
         return {
             'name': self.name,
             'numvoices': 1,
-            'units': list(map(
-                lambda unitIndex: self.units[unitIndex].randomize(
-                    ranges[unitIndex] if unitIndex < len(ranges) else None),
-                range(len(self.units)),
-            )),
+            'units': [
+                unit.randomize(
+                    ranges[u] if u < n_ranges else None
+                )
+                for u, unit in enumerate(self.units)
+            ]
         }
 
     def serialize(self: Self) -> dict:
         return {
             'name': self.name,
             'numvoices': 1,
-            'units': list(map(
-                lambda unitIndex: self.units[unitIndex].serialize(),
-                range(len(self.units)),
-            )),
+            'units': [
+                unit.serialize() for unit in self.units
+            ]
         }
 
 
 if __name__ == '__main__':
-    instrument: Instrument = Instrument.parse(Path(files(templates) / 'instrument.yml').read_text())
+    instrument: Instrument = Instrument.parse_file(templates_path / 'instrument.yml')
     print(instrument.randomize())
