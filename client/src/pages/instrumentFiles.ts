@@ -58,10 +58,10 @@ export default () => `
         </div>
         <div class="flex flex-col gap-2 w-full">
             <template x-for="yml in all" :key="yml.file">
-                <div class="border-t border-black">
+                <div class="my-4">
                     <div
                         x-text="yml.file"
-                        class="p-2 border-x border-black bg-amber-50"
+                        class="p-2 mb-1 border border-black bg-amber-50"
                         @click="console.log(yml)"
                     ></div>
                     <div
@@ -107,7 +107,7 @@ const instrumentUnits = (list: string) => `
                 (rows, row) => Math.max(rows, row.parameters.length, 1)
             , 0)
         }"
-        class="flex gap-4"
+        class="flex gap-2 select-none"
     >
         <template x-for="unit in ${list}" :key="unit.id">
             <table
@@ -133,21 +133,23 @@ const instrumentUnits = (list: string) => `
                         }"
                     >
                         <td
-                            class="text-left border border-black p-1 align-top"
+                            class="text-left border border-black align-top"
                             :rowspan="maxRows"
                             :style="{
                                 display: param.isFirst ? 'table-cell' : 'none'
                             }"
                         >
-                            <div class=" flex flex-col justify-between h-full">
+                            <div
+                                class="p-1 flex flex-col justify-between h-full font-bold cursor-pointer hover:bg-amber-50"
+                                @click="collapsed = !collapsed"                            
+                            >
                                 <div
                                     x-text="unit.type"
                                     class="flex-grow"
                                 ></div>
                                 <div
                                     x-text="collapsed ? 'Expand' : 'Collapse'"
-                                    class="font-bold text-blue-700 underline text-xs cursor-pointer"
-                                    @click="collapsed = !collapsed"
+                                    class="text-blue-700 underline text-xs"
                                 ></div>
                             </div>
                         </td>
@@ -156,6 +158,9 @@ const instrumentUnits = (list: string) => `
                             x-show="!collapsed"
                             class="px-1 text-left"
                         ></td>
+                        <td x-show="!collapsed">
+                            <custom-slider></custom-slider>
+                        </td>
                         <td
                             x-text="param.value"
                             x-show="!collapsed"
@@ -173,7 +178,7 @@ const instrumentUnits = (list: string) => `
 const emptyRows = () => `
     <template x-for="i in range(maxRows - unit.parameters.length)">
         <tr x-show="!collapsed">
-            <td colspan="3">&nbsp;</td>
+            <td colspan="4">&nbsp;</td>
         </tr>
     </template>
 `;

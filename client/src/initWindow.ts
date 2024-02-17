@@ -3,16 +3,19 @@ import {
     BanIcon,
     CrossIcon,
     HeartIcon,
-    LameIcon, LoadingIcon,
+    LameIcon,
+    LoadingIcon,
     PlayIcon,
     PoopIcon,
-    SaveIcon, ToolsIcon,
+    SaveIcon,
+    ToolsIcon,
     TrashIcon
 } from "./components/icons.ts";
 import { Context } from "pinecone-router/dist/types";
 import { Point } from "./utils/types";
 import Alpine from "alpinejs";
 import { fetchContent, fetchResponse } from "./utils/http.ts";
+import { CustomSlider } from "./components/customSlider.ts";
 
 export type AppRouter = { [handler: string]: (ctx: Context) => void };
 
@@ -146,6 +149,8 @@ export const initWindow = (alpine: typeof Alpine) => {
 };
 
 const initCustomElements = () => {
+    customElements.define("custom-slider", CustomSlider);
+
     customElements.define("play-icon", PlayIcon);
     customElements.define("heart-icon", HeartIcon);
     customElements.define("lame-icon", LameIcon);

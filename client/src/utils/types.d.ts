@@ -11,3 +11,12 @@ export type Point = {
     x: number,
     y: number
 };
+
+export type Rect = {
+    left: number,
+    right: number,
+    top: number,
+    bottom: number,
+    width: number,
+    height: number
+};
