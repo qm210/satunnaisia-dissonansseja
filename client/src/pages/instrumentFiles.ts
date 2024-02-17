@@ -21,10 +21,14 @@ Alpine.data("instruments", (): WithInit<InstrumentData> => ({
 
     load: function(this: Component<InstrumentData>) {
         this.isLoading = true;
-        window.fetchJson("/api/sointu/instruments")
-            .then(res => {
-                this.all = res;
-                console.log("instruments", res);
+        window.fetchJson([
+            "/api/sointu/instruments",
+            "/api/sointu/unit-templates"
+        ])
+            .then((res) => {
+                this.all = res[0];
+                // TODO: maybe this.$store.sointu.unitTemplates is not needed ever.
+                this.$store.sointu.unitTemplates = res[1];
             })
             .finally(() => {
                 this.isLoading = false;
@@ -44,23 +48,26 @@ Alpine.data("instruments", (): WithInit<InstrumentData> => ({
 export default () => `
     <div
         x-data="instruments"
+        class="h-full w-full overflow-auto"
     >
         <div class="text-lg">
             Instrument YML Definitions
         </div>
-        <div class="flex flex-col gap-2 w-full items-center">
+        <div x-show="isLoading" class="p-8">
+            <loading-icon spin="2s" size="80"></loading-icon>
+        </div>
+        <div class="flex flex-col gap-2 w-full">
             <template x-for="yml in all" :key="yml.file">
-                <div class="border border-black">
+                <div class="border-t border-black">
                     <div
                         x-text="yml.file"
-                        class="p-2 border border-b-black bg-amber-50"
+                        class="p-2 border-x border-black bg-amber-50"
+                        @click="console.log(yml)"
                     ></div>
                     <div
                         class="flex flex-col"
                     >
-                        <template x-for="unit in yml.instrument.units" :key="unit.id">
-                            ${instrumentUnitChild()}
-                        </template>
+                        ${instrumentUnits("yml.instrument.units")}
                     </div>
                 </div>
             </template>
@@ -68,11 +75,105 @@ export default () => `
     </div>
 `;
 
-const instrumentUnitChild = () => `
+(window as any).isFixed = (param: any) =>
+    !param.template;
+
+const instrumentUnits = (list: string) => `
+    <style>
+        td {
+            --border: 1px solid black;
+            height: 2rem;
+        }
+        
+        tr.param-fixed td:not(:first-of-type) {
+            color: #cacaca;
+        }
+        
+        tr:first-of-type td {
+            border-top: var(--border);
+        }
+        
+        tr:last-of-type td {
+            border-bottom: var(--border);
+        }
+        
+        td:last-of-type {
+            border-right: var(--border);
+        }
+    </style>
     <div
-        class="flex flex-row gap-4 items-stretch"
+        x-data="{
+            maxRows: ${list}.reduce(
+                (rows, row) => Math.max(rows, row.parameters.length, 1)
+            , 0)
+        }"
+        class="flex gap-4"
     >
-        <div x-text="unit.id"></div>
-        <div x-text="unit.type" class="flex-grow align-right"></div>
+        <template x-for="unit in ${list}" :key="unit.id">
+            <table
+                @contextmenu="console.log(Alpine.raw(${list}))"
+                class="border-collapse"
+                x-data="{
+                    collapsed: unit.parameters.every(isFixed),
+                }"
+            >
+            <tbody>
+            <template x-for="
+                param in unit.parameters.map((param, index) => {
+                    return {
+                        ...param,
+                        isFirst: index === 0,
+                    }; 
+                })
+                ">
+                    <tr
+                        @dblclick="console.log(Alpine.raw(param))"
+                        :class="{
+                            'param-fixed': isFixed(param)
+                        }"
+                    >
+                        <td
+                            class="text-left border border-black p-1 align-top"
+                            :rowspan="maxRows"
+                            :style="{
+                                display: param.isFirst ? 'table-cell' : 'none'
+                            }"
+                        >
+                            <div class=" flex flex-col justify-between h-full">
+                                <div
+                                    x-text="unit.type"
+                                    class="flex-grow"
+                                ></div>
+                                <div
+                                    x-text="collapsed ? 'Expand' : 'Collapse'"
+                                    class="font-bold text-blue-700 underline text-xs cursor-pointer"
+                                    @click="collapsed = !collapsed"
+                                ></div>
+                            </div>
+                        </td>
+                        <td
+                            x-text="param.name"
+                            x-show="!collapsed"
+                            class="px-1 text-left"
+                        ></td>
+                        <td
+                            x-text="param.value"
+                            x-show="!collapsed"
+                            class="px-1 text-right"
+                        ></td>
+                    </tr>
+            </template>
+            ${emptyRows()}
+            </tbody>
+            </table>
+        </template>
     </div>
+`;
+
+const emptyRows = () => `
+    <template x-for="i in range(maxRows - unit.parameters.length)">
+        <tr x-show="!collapsed">
+            <td colspan="3">&nbsp;</td>
+        </tr>
+    </template>
 `;

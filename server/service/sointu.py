@@ -30,7 +30,7 @@ class SointuService:
     """
     is the service that calls sointu with the given instrument / sequence settings.
     """
-    
+
     def __init__(self, config, app_path, downloader):
         self.downloader = downloader
         self.app_path = Path(app_path)
@@ -59,6 +59,7 @@ class SointuService:
         (self.wav_path / filename).write_bytes(wav_data)
         # return something? -> third type in Generator[..., ..., None]
 
+    # that one is probably not needed anymore. thanks but bye!
     @staticmethod
     def run_some_testing() -> Generator[string, None, None]:
         commands = [["pwd"], ["ls"]]

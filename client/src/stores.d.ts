@@ -1,5 +1,5 @@
 import { AlpineComponent } from "alpinejs";
-import type { Rating, TaggedFile } from "./types";
+import type { Rating, TaggedFile, UnitTemplate } from "./types";
 import { Message } from "./utils/types";
 import { Rated } from "./enums.ts";
 
@@ -9,6 +9,9 @@ export type Store = {
     user: {
         name: string,
         fetchedWavsLastTime: number | null,
+    },
+    sointu: {
+        unitTemplates: UnitTemplate[],
     }
 };
 

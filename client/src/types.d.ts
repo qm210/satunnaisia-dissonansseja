@@ -32,3 +32,10 @@ export type TaggedFileGroup = {
     files: TaggedFile[],
     tag: string
 };
+
+export type UnitTemplate = {
+    name: string,
+    allParams: string[],
+    paramTemplates: any[],
+    varArgs: any,
+};

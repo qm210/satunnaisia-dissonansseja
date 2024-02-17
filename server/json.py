@@ -11,4 +11,4 @@ class JsonProvider(DefaultJSONProvider):
             return obj.serialize()
         if isinstance(obj, Unit):
             return obj.serialize()
-        return super().default(obj)
+        return DefaultJSONProvider.default(obj)

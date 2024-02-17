@@ -8,7 +8,8 @@ import { Message, milliseconds } from "./utils/types";
 enum StoreKey {
     User = "user",
     Ratings = "ratings",
-    Messages = "messages"
+    Messages = "messages",
+    Sointu = "sointu",
 }
 
 export const initStores = () => {
@@ -90,6 +91,10 @@ export const initStores = () => {
                 }, lifetime);
             }
         }
+    });
+
+    Alpine.store(StoreKey.Sointu, {
+        unitTemplates: []
     });
 };
 

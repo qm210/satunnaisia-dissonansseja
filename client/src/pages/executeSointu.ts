@@ -12,7 +12,7 @@ const initStream = async (url: string, onMessage: (msg: string) => void, onClose
     }
     const reader = response.body.getReader();
     const decoder = new TextDecoder("utf-8");
-    const stream = new ReadableStream({
+    return new ReadableStream({
         async start(controller) {
             for (; ;) {
                 const { done, value } =

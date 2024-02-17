@@ -24,12 +24,13 @@ declare global {
         defaultRouter: AppRouter,
 
         // general helpers
-        fetchJson: <R = any>(url: string) => Promise<R | null>;
+        fetchJson: <R = any>(url: string | string[]) => Promise<R | null>;
         fetchIntoAudioPlayer: (url: string) => Promise<HTMLAudioElement>;
         postJson: <T extends object | void = void, R = void>(url: string, body?: T) => Promise<R | undefined>;
         deleteWithParams: (url: string, params: Record<string, string>) => Promise<any>;
         setDebounced: (callback: () => void) => void;
         clientPos: (event: MouseEvent) => Point;
+        range: (n: number) => number[],
     }
 }
 
@@ -49,9 +50,15 @@ export const initWindow = (alpine: typeof Alpine) => {
         }
     };
 
-    window.fetchJson = async <R>(url: string) => {
+    window.fetchJson = async <R>(url: string | string[]) => {
         try {
-            return fetchContent(url) as Promise<R>;
+            if (url instanceof Array) {
+                return Promise.all(
+                    url.map(it => fetchContent(it))
+                ) as Promise<R>;
+            } else {
+                return fetchContent(url) as Promise<R>;
+            }
         } catch (err) {
             console.warn("fetchJson ERROR", url, err);
             return null;
@@ -132,6 +139,10 @@ export const initWindow = (alpine: typeof Alpine) => {
             y: event.clientY
         };
     };
+
+    window.range = (n: number) =>
+        Array(n).fill(0)
+            .map((_, i) => i);
 };
 
 const initCustomElements = () => {
