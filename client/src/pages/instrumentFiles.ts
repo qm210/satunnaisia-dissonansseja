@@ -22,13 +22,11 @@ Alpine.data("instruments", (): WithInit<InstrumentData> => ({
     load: function(this: Component<InstrumentData>) {
         this.isLoading = true;
         window.fetchJson([
-            "/api/sointu/instruments",
-            "/api/sointu/unit-templates"
+            "/api/sointu/instruments"
         ])
             .then((res) => {
                 this.all = res[0];
-                // TODO: maybe this.$store.sointu.unitTemplates is not needed ever.
-                this.$store.sointu.unitTemplates = res[1];
+                this.$store.sointu.undoStack = [];
             })
             .finally(() => {
                 this.isLoading = false;

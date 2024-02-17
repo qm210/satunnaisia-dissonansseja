@@ -39,3 +39,11 @@ export type UnitTemplate = {
     paramTemplates: any[],
     varArgs: any,
 };
+
+export type UnitParamState = {
+    instrumentYml: string,
+    paramName: string,
+    previousValue: number,
+    currentValue: number,
+    timestamp: number,
+};

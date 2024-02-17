@@ -1,5 +1,5 @@
 import { clamp } from "../utils/math.ts";
-import { getInnerRect, yIsInside } from "../utils/html.ts";
+import { getInnerRect } from "../utils/html.ts";
 import { Rect } from "../utils/types";
 
 type Handles = {
@@ -9,11 +9,16 @@ type Handles = {
     range: HTMLDivElement | undefined,
 };
 
+type MoveOptions = {
+    extendRange?: boolean,
+};
+
 export class ParameterSlider extends HTMLElement {
     private min: number = 0;
     private max: number = 128;
     private value: number = 64;
     private originalValue: number | null = null;
+    private range: [number, number] | null = null;
     private disabled: boolean = false;
 
     private handles: Handles = {} as Handles;
@@ -57,7 +62,15 @@ export class ParameterSlider extends HTMLElement {
                 }
                 
                 .original {
-                    background-color: silver;                
+                    background-color: black;
+                    opacity: 0.2;
+                }
+                
+                #range {
+                    height: 100%;
+                    background-color: darkorange;
+                    opacity: 0.5;
+                    position: absolute;
                 }
             </style>
             
@@ -113,7 +126,7 @@ export class ParameterSlider extends HTMLElement {
                 }
                 event.stopPropagation();
                 isDragging = true;
-                this.moveTo(event);
+                this.moveTo(event, { extendRange: false });
             });
         document.addEventListener(
             "mouseup", () => {
@@ -125,11 +138,11 @@ export class ParameterSlider extends HTMLElement {
                     return;
                 }
                 event.preventDefault();
-                this.moveTo(event);
+                this.moveTo(event, { extendRange: true });
             });
     }
 
-    moveTo(this: ParameterSlider, event: MouseEvent) {
+    moveTo(this: ParameterSlider, event: MouseEvent, options?: MoveOptions) {
         const rect = getInnerRect(this.handles.slider!);
         const thickness = this.handles.current!.getBoundingClientRect().width;
         const xRatio = clamp(
@@ -147,6 +160,18 @@ export class ParameterSlider extends HTMLElement {
             }));
             this.value = newValue;
         }
+
+        if (options?.extendRange) {
+            this.range = !this.range
+                ? [this.value, this.value]
+                : [
+                    Math.min(this.range[0], this.value),
+                    Math.max(this.range[1], this.value)
+                ];
+        } else {
+            this.range = null;
+        }
+
         this.updateHandles(rect, thickness);
     }
 
@@ -160,15 +185,25 @@ export class ParameterSlider extends HTMLElement {
         }
         const xPosition = (value: number | null) => {
             if (value === null) {
-                return "0";
+                return 0;
             }
             const ratio = (value - this.min) / (this.max - this.min);
-            return (ratio * (rect!.width - thickness!)) + "px";
+            return ratio * (rect!.width - thickness!);
         };
-        this.handles.current!.style.left = xPosition(this.value);
-        this.handles.original!.style.left = xPosition(this.originalValue);
+        this.handles.current!.style.left = xPosition(this.value) + "px";
+        this.handles.original!.style.left = xPosition(this.originalValue) + "px";
 
         this.handles.slider!.classList.toggle("disabled", this.disabled);
+
+        if (this.range) {
+            this.handles.range!.style.display = "block";
+            const left = xPosition(this.range[0]);
+            const right = xPosition(this.range[1]);
+            this.handles.range!.style.left = left + "px";
+            this.handles.range!.style.width = (right - left) + "px";
+        } else {
+            this.handles.range!.style.display = "none";
+        }
     }
 
 }

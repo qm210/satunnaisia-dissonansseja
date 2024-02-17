@@ -1,5 +1,5 @@
 import { AlpineComponent } from "alpinejs";
-import type { Rating, TaggedFile, UnitTemplate } from "./types";
+import type { Rating, TaggedFile, UnitParamState, UnitTemplate } from "./types";
 import { Message } from "./utils/types";
 import { Rated } from "./enums.ts";
 
@@ -11,7 +11,7 @@ export type Store = {
         fetchedWavsLastTime: number | null,
     },
     sointu: {
-        unitTemplates: UnitTemplate[],
+        undoStack: UnitParamState[],
     }
 };
 

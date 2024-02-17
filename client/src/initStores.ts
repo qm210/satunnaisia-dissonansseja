@@ -94,7 +94,7 @@ export const initStores = () => {
     });
 
     Alpine.store(StoreKey.Sointu, {
-        unitTemplates: []
+        undoStack: [] // TODO: not implemented yet, but gonne be useful
     });
 };
 
