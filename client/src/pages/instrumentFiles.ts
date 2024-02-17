@@ -154,6 +154,9 @@ const instrumentUnits = (list: string) => `
                         <td x-show="!collapsed">
                             <parameter-slider
                                 :position="param.value"
+                                :min="param.template?.min"
+                                :max="param.template?.max"
+                                :disabled="isFixed(param)"
                                 @change="param.value = event.detail.value"
                             ></parameter-slider>
                         </td>

@@ -117,6 +117,10 @@ var_arg_templates = {
     UnitType.Delay: UnitVarArgTemplate("delaytime", "delaylines"),
 }
 
+# TODO: the thing below is not complete yet
+# e.g. the "stereo" / "lfo" are not meant to be variable, but it still would be better
+# for the client to know that these are bools, to display the disabled sliders.
+
 # use this to match the correct order as seen in Sointu
 # also, because the YML sometimes contain bullshit fields (e.g. envelope params on oscillator??)
 all_defined_params = {

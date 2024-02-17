@@ -12,20 +12,22 @@ type Handles = {
 export class ParameterSlider extends HTMLElement {
     private min: number = 0;
     private max: number = 128;
-    private value: number = 100;
-    private originalValue: number | null;
+    private value: number = 64;
+    private originalValue: number | null = null;
+    private disabled: boolean = false;
 
     private handles: Handles = {} as Handles;
-    private _internals: any;
 
     static observedAttributes = [
-        "position"
+        "position",
+        "min",
+        "max",
+        "disabled"
     ];
 
     constructor() {
         super();
         this.attachShadow({ mode: "open" });
-        this._internals = this.attachInternals();
     }
 
     connectedCallback() {
@@ -38,12 +40,22 @@ export class ParameterSlider extends HTMLElement {
                     border-radius: 4px;
                     position: relative; 
                 }
+                
+                #slider.disabled {
+                    background-color: #eee;
+                }
+                                
                 .handle {
                     width: 4px;
                     height: 100%;
                     background-color: darkred;
                     position: absolute;
                 }
+                
+                #slider.disabled .handle {
+                    background-color: #666;
+                }
+                
                 .original {
                     background-color: silver;                
                 }
@@ -56,24 +68,9 @@ export class ParameterSlider extends HTMLElement {
             </div>
         `;
         this.initSlider(this.shadowRoot!);
-
-        // // we need this for interaction with Alpine bindings...
-        // const observer = new MutationObserver(mutations => {
-        //     mutations.forEach(mutation => {
-        //         for (const attribute of ParameterSlider.observedAttributes) {
-        //             if (mutation.type === "attributes" && mutation.attributeName === attribute) {
-        //                 const newValue = this.getAttribute("value");
-        //                 // Do something with the new value
-        //                 console.log(`value attribute changed to ${newValue}`);
-        //             }
-        //         }
-        //     });
-        // });
-        // observer.observe(this, { attributes: true });
     }
 
     attributeChangedCallback(name: string, oldValue: any, newValue: any) {
-        console.log("ACC", name, oldValue, newValue);
         switch (name) {
             case "position":
                 this.value = +newValue;
@@ -81,7 +78,17 @@ export class ParameterSlider extends HTMLElement {
                     this.originalValue = this.value;
                 }
                 break;
+            case "min":
+                this.min = +newValue;
+                break;
+            case "max":
+                this.max = +newValue;
+                break;
+            case "disabled":
+                this.disabled = !!newValue;
+                break;
             default:
+                console.log("Unhandled Attribute Change", name, newValue, oldValue);
                 return;
         }
         this.updateHandles();
@@ -101,6 +108,9 @@ export class ParameterSlider extends HTMLElement {
 
         this.handles.slider.addEventListener(
             "mousedown", (event) => {
+                if (this.disabled) {
+                    return;
+                }
                 event.stopPropagation();
                 isDragging = true;
                 this.moveTo(event);
@@ -157,6 +167,8 @@ export class ParameterSlider extends HTMLElement {
         };
         this.handles.current!.style.left = xPosition(this.value);
         this.handles.original!.style.left = xPosition(this.originalValue);
+
+        this.handles.slider!.classList.toggle("disabled", this.disabled);
     }
 
 }
