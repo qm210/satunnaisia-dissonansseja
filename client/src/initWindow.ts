@@ -15,7 +15,7 @@ import { Context } from "pinecone-router/dist/types";
 import { Point } from "./utils/types";
 import Alpine from "alpinejs";
 import { fetchContent, fetchResponse } from "./utils/http.ts";
-import { CustomSlider } from "./components/customSlider.ts";
+import { ParameterSlider } from "./components/parameterSlider.ts";
 
 export type AppRouter = { [handler: string]: (ctx: Context) => void };
 
@@ -149,7 +149,7 @@ export const initWindow = (alpine: typeof Alpine) => {
 };
 
 const initCustomElements = () => {
-    customElements.define("custom-slider", CustomSlider);
+    customElements.define("parameter-slider", ParameterSlider);
 
     customElements.define("play-icon", PlayIcon);
     customElements.define("heart-icon", HeartIcon);

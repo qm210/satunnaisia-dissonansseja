@@ -118,14 +118,7 @@ const instrumentUnits = (list: string) => `
                 }"
             >
             <tbody>
-            <template x-for="
-                param in unit.parameters.map((param, index) => {
-                    return {
-                        ...param,
-                        isFirst: index === 0,
-                    }; 
-                })
-                ">
+            <template x-for="(param, index) in unit.parameters">
                     <tr
                         @dblclick="console.log(Alpine.raw(param))"
                         :class="{
@@ -136,7 +129,7 @@ const instrumentUnits = (list: string) => `
                             class="text-left border border-black align-top"
                             :rowspan="maxRows"
                             :style="{
-                                display: param.isFirst ? 'table-cell' : 'none'
+                                display: index === 0 ? 'table-cell' : 'none'
                             }"
                         >
                             <div
@@ -159,7 +152,10 @@ const instrumentUnits = (list: string) => `
                             class="px-1 text-left"
                         ></td>
                         <td x-show="!collapsed">
-                            <custom-slider></custom-slider>
+                            <parameter-slider
+                                :position="param.value"
+                                @change="param.value = event.detail.value"
+                            ></parameter-slider>
                         </td>
                         <td
                             x-text="param.value"
