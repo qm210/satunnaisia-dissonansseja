@@ -3,7 +3,7 @@ import {
     BanIcon,
     CrossIcon,
     HeartIcon,
-    LameIcon,
+    LameIcon, LeaveIcon,
     LoadingIcon,
     PlayIcon,
     PoopIcon,
@@ -162,4 +162,5 @@ const initCustomElements = () => {
     customElements.define("loading-icon", LoadingIcon);
     customElements.define("audiofile-icon", AudioFileIcon);
     customElements.define("tools-icon", ToolsIcon);
+    customElements.define("leave-icon", LeaveIcon);
 };

@@ -111,6 +111,13 @@ function NameTag() {
                         alert('Deleted ' + labelledCount(nDeleted, 'rating'));
                         location.reload();
                     });
+                },
+                resetUser() {
+                    if ($store.ratings.unsaved.length > 0) {
+                        alert('Cannot leave yet, because there are unsaved ratings. Submit or Discard them first.');
+                        return;
+                    }
+                    $router.navigate('/change-user');
                 }
             }"
             @contextmenu="toggleMenu"
@@ -132,6 +139,15 @@ function NameTag() {
                 class="flex flex-col items-stretch p-1 gap-1"
                 :style="contextMenuStyle(menuPos)"
             >
+                <button
+                    class="flex gap-4"
+                    @click="resetUser()"
+                >
+                    <leave-icon></leave-icon>
+                    <span>
+                        Leave (i.e. change username)
+                    </span>
+                </button>
                 <button
                     class="flex gap-4"
                     @click="deleteAllRatings()"

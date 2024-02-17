@@ -7,15 +7,22 @@ export default () => `
             class="flex"
             x-data="{
                 name: $store.user.name,
+                isPosting: false,
                 
                 submit: function() {
                     $store.user.name = this.name;
-                    if ($router.currentRoute === '/') {
-                        location.reload();
-                    } else {
-                        $router.navigate('/');
-                    }
-                    postJson('/api/user', {username: this.name});
+                    this.isPosting = true;
+                    postJson('/api/user', {username: this.name})
+                        .then(() => {
+                            if ($router.path === '/') {
+                                location.reload();
+                            } else {
+                                $router.navigate('/');
+                            }
+                        })
+                        .finally(() => {
+                            this.isPosting = false;
+                        });
                 }
             }"
             x-init="
@@ -34,10 +41,11 @@ export default () => `
             />
             <button
                 class="border-black rounded-none"
+                x-show="!isPosting"
                 @click="submit()"
                 :disabled="!name"
             >
-                <play-icon></play-icon>                    
+                <play-icon></play-icon>
             </button>
         </div>
     </div>
