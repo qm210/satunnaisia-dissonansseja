@@ -21,11 +21,10 @@ Alpine.data("instruments", (): WithInit<InstrumentData> => ({
 
     load: function(this: Component<InstrumentData>) {
         this.isLoading = true;
-        window.fetchJson([
-            "/api/sointu/instruments"
-        ])
+        window.fetchJson("/api/sointu/instruments")
             .then((res) => {
-                this.all = res[0];
+                this.all = res;
+                console.log("All!", this.all);
                 this.$store.sointu.undoStack = [];
             })
             .finally(() => {
@@ -73,9 +72,6 @@ export default () => `
     </div>
 `;
 
-(window as any).isFixed = (param: any) =>
-    !param.template;
-
 const instrumentUnits = (list: string) => `
     <style>
         td {
@@ -112,7 +108,7 @@ const instrumentUnits = (list: string) => `
                 @contextmenu="console.log(Alpine.raw(${list}))"
                 class="border-collapse"
                 x-data="{
-                    collapsed: unit.parameters.every(isFixed),
+                    collapsed: unit.parameters.every(p => p.template.fixed),
                 }"
             >
             <tbody>
@@ -120,7 +116,7 @@ const instrumentUnits = (list: string) => `
                     <tr
                         @dblclick="console.log(Alpine.raw(param))"
                         :class="{
-                            'param-fixed': isFixed(param)
+                            'param-fixed': param.template.fixed
                         }"
                     >
                         <td
@@ -152,10 +148,12 @@ const instrumentUnits = (list: string) => `
                         <td x-show="!collapsed">
                             <parameter-slider
                                 :position="param.value"
-                                :min="param.template?.min"
-                                :max="param.template?.max"
-                                :disabled="isFixed(param)"
+                                :range="param.range"
+                                :min="param.template.min"
+                                :max="param.template.max"
+                                :disabled="param.template.fixed"
                                 @change="param.value = event.detail.value"
+                                @changeRange="param.range = event.detail.range"
                             ></parameter-slider>
                         </td>
                         <td

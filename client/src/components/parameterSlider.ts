@@ -25,10 +25,14 @@ export class ParameterSlider extends HTMLElement {
 
     static observedAttributes = [
         "position",
+        "range",
         "min",
         "max",
         "disabled"
     ];
+
+    static ChangePosition = "change";
+    static ChangeRange = "changeRange";
 
     constructor() {
         super();
@@ -142,6 +146,14 @@ export class ParameterSlider extends HTMLElement {
             });
     }
 
+    dispatchChange(this: ParameterSlider, type: string, detail: any) {
+        this.dispatchEvent(
+            new CustomEvent(
+                type,
+                { detail }
+            ));
+    }
+
     moveTo(this: ParameterSlider, event: MouseEvent, options?: MoveOptions) {
         const rect = getInnerRect(this.handles.slider!);
         const thickness = this.handles.current!.getBoundingClientRect().width;
@@ -151,15 +163,17 @@ export class ParameterSlider extends HTMLElement {
         const newValue = Math.round(
             this.min + xRatio * (this.max - this.min)
         );
+
         if (newValue !== this.value) {
-            this.dispatchEvent(new CustomEvent("change", {
-                detail: {
-                    value: newValue,
-                    previousValue: this.value
-                }
-            }));
+            this.dispatchChange(
+                ParameterSlider.ChangePosition,
+                newValue
+            );
             this.value = newValue;
         }
+
+        const oldRangeLower = this.range?.[0];
+        const oldRangeUpper = this.range?.[1];
 
         if (options?.extendRange) {
             this.range = !this.range
@@ -170,6 +184,13 @@ export class ParameterSlider extends HTMLElement {
                 ];
         } else {
             this.range = null;
+        }
+        if (this.range?.[0] !== oldRangeLower ||
+            this.range?.[1] !== oldRangeUpper) {
+            this.dispatchChange(
+                ParameterSlider.ChangeRange,
+                this.range
+            );
         }
 
         this.updateHandles(rect, thickness);

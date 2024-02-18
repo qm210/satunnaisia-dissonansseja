@@ -40,10 +40,24 @@ class UnitType(Enum):
 @dataclass
 class UnitParamTemplate:
     name: str
-    default: int = 64
     min: int = 0
     max: int = 128
-    label: Optional[Union[str, Callable[[int], str]]] = None
+    # label: Optional[Union[str, Callable[[int], str]]] = None
+    optional: bool = False
+
+
+class UnitParamFixed(UnitParamTemplate):
+    fixed = True,
+
+
+class UnitParamFixedSpecial(UnitParamFixed):
+    # for something like the "target" which are really stack-specific
+    special = True
+
+
+class UnitParamFixedBool(UnitParamFixed):
+    min = 0
+    max = 1
 
 
 @dataclass
@@ -55,32 +69,26 @@ class UnitVarArgTemplate:
     max: int = 65536
 
 
-varying_param_templates = {
-    UnitType.Oscillator: [
-        UnitParamTemplate("transpose"),
-        UnitParamTemplate("detune"),
-        UnitParamTemplate("phase", default=0),
-        UnitParamTemplate("color"),
-        UnitParamTemplate("shape"),
-        UnitParamTemplate("gain"),
-        UnitParamTemplate("unison", default=0),
+# TODO: check again whether this might need to be refined
+# also, the YML sometimes contain bullshit fields (e.g. envelope params on oscillator??)
+# --> can use this to sanitize the files on saving
+param_templates = {
+    UnitType.Add: [
+        UnitParamFixedBool("stereo"),
     ],
-    UnitType.Noise: [
-        UnitParamTemplate("shape"),
-        UnitParamTemplate("gain"),
+    UnitType.AddP: [
+        UnitParamFixedBool("stereo"),
     ],
-    UnitType.Envelope: [
-        UnitParamTemplate("attack"),
-        UnitParamTemplate("decay"),
-        UnitParamTemplate("sustain"),
-        UnitParamTemplate("release"),
+    UnitType.Aux: [
+        UnitParamFixedBool("stereo"),
         UnitParamTemplate("gain"),
+        UnitParamFixed("channel", max=6)
     ],
-    UnitType.Filter: [
-        UnitParamTemplate("frequency"),
-        UnitParamTemplate("resonance"),
+    UnitType.Clip: [
+        UnitParamFixedBool("stereo"),
     ],
     UnitType.Compressor: [
+        UnitParamFixedBool("stereo"),
         UnitParamTemplate("attack"),
         UnitParamTemplate("release"),
         UnitParamTemplate("invgain"),
@@ -88,183 +96,133 @@ varying_param_templates = {
         UnitParamTemplate("ratio"),
     ],
     UnitType.Crush: [
+        UnitParamFixedBool("stereo"),
         UnitParamTemplate("resolution"),
     ],
-    UnitType.Distort: [
-        UnitParamTemplate("drive"),
-    ],
     UnitType.Delay: [
+        UnitParamFixedBool("stereo"),
         UnitParamTemplate("pregain"),
         UnitParamTemplate("dry"),
         UnitParamTemplate("feedback"),
         UnitParamTemplate("damp"),
         UnitParamTemplate("notetracking", max=2),
+        UnitParamFixed("reverb", max=2)
+        # plus varags: "delaylines" x "delaytime"
     ],
-    UnitType.OutAux: [
-        UnitParamTemplate("outgain"),
-        UnitParamTemplate("auxgain"),
+    UnitType.Distort: [
+        UnitParamFixedBool("stereo"),
+        UnitParamTemplate("drive"),
+    ],
+    UnitType.Envelope: [
+        UnitParamFixedBool("stereo"),
+        UnitParamTemplate("attack"),
+        UnitParamTemplate("decay"),
+        UnitParamTemplate("sustain"),
+        UnitParamTemplate("release"),
+        UnitParamTemplate("gain"),
+    ],
+    UnitType.Filter: [
+        UnitParamFixedBool("stereo"),
+        UnitParamTemplate("frequency"),
+        UnitParamTemplate("resonance"),
+        UnitParamFixedBool("lowpass"),
+        UnitParamFixedBool("bandpass"),
+        UnitParamFixedBool("highpass"),
+        UnitParamFixedBool("negbandpass"),
+        UnitParamFixedBool("neghighpass"),
     ],
     UnitType.Gain: [
+        UnitParamFixedBool("stereo"),
         UnitParamTemplate("gain"),
     ],
     UnitType.Hold: [
+        UnitParamFixedBool("stereo"),
         UnitParamTemplate("holdfreq")
     ],
-    # TODO: complete this
+    UnitType.In: [
+        UnitParamFixedBool("stereo"),
+        UnitParamFixed("channel", max=6)
+    ],
+    UnitType.InvGain: [
+        UnitParamFixedBool("stereo"),
+        UnitParamTemplate("invgain")
+    ],
+    UnitType.LoadNote: [
+        UnitParamFixedBool("stereo"),
+    ],
+    UnitType.LoadVal: [
+        UnitParamFixedBool("stereo"),
+        UnitParamTemplate("value"),
+    ],
+    UnitType.Mul: [
+        UnitParamFixedBool("stereo"),
+    ],
+    UnitType.MulP: [
+        UnitParamFixedBool("stereo"),
+    ],
+    UnitType.Noise: [
+        UnitParamFixedBool("stereo"),
+        UnitParamTemplate("shape"),
+        UnitParamTemplate("gain"),
+    ],
+    UnitType.Oscillator: [
+        UnitParamFixedBool("stereo"),
+        UnitParamTemplate("transpose"),
+        UnitParamTemplate("detune"),
+        UnitParamTemplate("phase"),
+        UnitParamTemplate("color"),
+        UnitParamTemplate("shape"),
+        UnitParamTemplate("gain"),
+        UnitParamFixed("type", max=4),
+        UnitParamFixedBool("lfo"),
+        UnitParamTemplate("unison"),
+        UnitParamFixed("samplestart", optional=True),  # only for type == 4 (Sample)
+        UnitParamFixed("loopstart", optional=True),  # only for type == 4 (Sample)
+    ],
+    UnitType.Out: [
+        UnitParamFixedBool("stereo"),
+        UnitParamTemplate("gain"),
+    ],
+    UnitType.OutAux: [
+        UnitParamFixedBool("stereo"),
+        UnitParamTemplate("outgain"),
+        UnitParamTemplate("auxgain"),
+    ],
+    UnitType.Pan: [
+        UnitParamFixedBool("stereo"),
+        UnitParamFixed("panning"),  # could make variable, but would one randomize that..?
+    ],
+    UnitType.Pop: [
+        UnitParamFixedBool("stereo"),
+    ],
+    UnitType.Push: [
+        UnitParamFixedBool("stereo"),
+    ],
+    UnitType.Receive: [
+        UnitParamFixedBool("stereo"),
+    ],
+    UnitType.Send: [
+        UnitParamFixedBool("stereo"),
+        UnitParamTemplate("amount"),
+        UnitParamFixed("voice", max=32),
+        UnitParamFixedSpecial("target"),  # this is actually
+        UnitParamFixed("port", max=7),
+        UnitParamFixedBool("sendpop"),
+    ],
+    UnitType.Speed: [],
+    UnitType.Sync: [],
+    UnitType.XCh: [
+        UnitParamFixedBool("stereo"),
+    ],
 }
 
 var_arg_templates = {
     UnitType.Delay: UnitVarArgTemplate("delaytime", "delaylines"),
 }
 
-# TODO: the thing below is not complete yet
-# e.g. the "stereo" / "lfo" are not meant to be variable, but it still would be better
-# for the client to know that these are bools, to display the disabled sliders.
-
-# use this to match the correct order as seen in Sointu
-# also, because the YML sometimes contain bullshit fields (e.g. envelope params on oscillator??)
 all_defined_params = {
-    UnitType.Add: [
-        "stereo"
-    ],
-    UnitType.AddP: [
-        "stereo"
-    ],
-    UnitType.Aux: [
-        "stereo",
-        "gain",
-        "channel"
-    ],
-    UnitType.Clip: [
-        "stereo"
-    ],
-    UnitType.Compressor: [
-        "stereo",
-        "attack",
-        "release",
-        "invgain",
-        "threshold",
-        "ratio"
-    ],
-    UnitType.Crush: [
-        "stereo",
-        "resolution"
-    ],
-    UnitType.Delay: [
-        "stereo",
-        "pregain",
-        "dry",
-        "feedback",
-        "damp",
-        "notetracking",
-        "reverb",
-        # plus varags: "delaylines" x "delaytime"
-    ],
-    UnitType.Distort: [
-        "stereo",
-        "drive",
-    ],
-    UnitType.Envelope: [
-        "stereo",
-        "attack",
-        "decay",
-        "sustain",
-        "release",
-        "gain"
-    ],
-    UnitType.Filter: [
-        "stereo",
-        "frequency",
-        "resonance",
-        "lowpass",
-        "bandpass",
-        "highpass",
-        "negbandpass",
-        "neghighpass",
-    ],
-    UnitType.Gain: [
-        "stereo",
-        "gain",
-    ],
-    UnitType.Hold: [
-        "stereo",
-        "holdfreq"
-    ],
-    UnitType.In: [
-        "stereo",
-        "channel"
-    ],
-    UnitType.InvGain: [
-        "stereo",
-        "invgain"
-    ],
-    UnitType.LoadNote: [
-        "stereo"
-    ],
-    UnitType.LoadVal: [
-        "stereo",
-        "value"
-    ],
-    UnitType.Mul: [
-        "stereo"
-    ],
-    UnitType.MulP: [
-        "stereo"
-    ],
-    UnitType.Noise: [
-        "stereo",
-        "shape",
-        "gain"
-    ],
-    UnitType.Oscillator: [
-        "stereo",
-        "transpose",
-        "detune",
-        "phase",
-        "color",
-        "shape",
-        "gain",
-        "type",  # wouldn't know how to include the "3 / Gate" and "4 / Sample" options
-        "lfo",
-        "unison",
-        "samplestart",  # optional for type == 4
-        "loopstart"  # optional for type == 4
-    ],
-    UnitType.Out: [
-        "stereo",
-        "gain"
-    ],
-    UnitType.OutAux: [
-        "stereo",
-        "outgain",
-        "mixgain",
-    ],
-    UnitType.Pan: [
-        "stereo",
-        "panning"
-    ],
-    UnitType.Pop: [
-        "stereo"
-    ],
-    UnitType.Push: [
-        "stereo"
-    ],
-    UnitType.Receive: [
-        "stereo"
-    ],
-    UnitType.Send: [
-        "stereo",
-        "amount",
-        "voice",
-        "target",
-        "port",
-        "sendpop",
-    ],
-    UnitType.Speed: [],
-    UnitType.Sync: [],
-    UnitType.XCh: [
-        "stereo"
-    ]
+    type: [param.name for param in params]
+    for type, params in param_templates.items()
 }
 
 
@@ -280,6 +238,6 @@ def collect_all_unit_templates() -> List[UnitTemplate]:
     return [UnitTemplate(
         unit_type.value,
         all_defined_params[unit_type],
-        varying_param_templates.get(unit_type, []),
+        param_templates.get(unit_type, []),
         var_arg_templates.get(unit_type)
-    ) for unit_type in list(UnitType)]
+    ) for unit_type in UnitType]

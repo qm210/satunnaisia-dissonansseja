@@ -19,7 +19,7 @@ def try_calling_sointu_for_debug(sointu_service=Provide[Container.sointu_service
 @api.route('/instruments')
 @inject
 def get_all_instruments(instruments_service=Provide[Container.instruments_service]):
-    result = instruments_service.get_all()
+    result = instruments_service.get_all_ymls()
     return jsonify(result)
 
 

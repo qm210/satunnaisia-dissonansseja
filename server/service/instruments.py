@@ -17,7 +17,7 @@ class InstrumentsService:
         self.sointu_service = sointu_service
         self._all_unit_templates = collect_all_unit_templates()
 
-    def get_all(self):
+    def get_all_ymls(self):
         result = []
         for yml_file in self.folder.glob('*.yml'):
             entry = {
@@ -61,7 +61,8 @@ class InstrumentsService:
                         next(
                             (t for t in template.param_templates if t.name == param_name),
                             None
-                        )
+                        ),
+                    "range": None
                 }
                 for param_name in template.all_params
                 if unit.parameters.get(param_name) is not None
