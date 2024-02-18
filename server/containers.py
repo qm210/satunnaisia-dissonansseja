@@ -4,6 +4,7 @@ from flask import Flask
 from flask_sqlalchemy import SQLAlchemy
 
 from server.model.base import Base
+from server.repositories.instrument_config import InstrumentConfigRepository
 from server.repositories.rating import RatingRepository
 from server.repositories.user import UserRepository
 from server.service.instruments import InstrumentsService
@@ -58,6 +59,11 @@ class Container(containers.DeclarativeContainer):
         session_factory=db.provided.session
     )
 
+    instrument_config_repository = providers.Factory(
+        InstrumentConfigRepository,
+        session_factory=db.provided.session
+    )
+
     wav_files_service = providers.Factory(
         WavFilesService,
         config=config,
@@ -79,5 +85,6 @@ class Container(containers.DeclarativeContainer):
         InstrumentsService,
         config=config,
         logger=app.provided.logger,
-        sointu_service=sointu_service
+        sointu_service=sointu_service,
+        instrument_config_repository=instrument_config_repository
     )

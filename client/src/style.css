@@ -35,6 +35,10 @@ body {
     height: 100vh;
 }
 
+body.waiting {
+    cursor: wait !important;
+}
+
 @media (min-width: 1400px) {
     body {
         --width: 80vw;

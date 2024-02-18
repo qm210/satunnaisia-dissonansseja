@@ -1,5 +1,5 @@
 from dependency_injector.wiring import Provide, inject
-from flask import Blueprint, Response, jsonify
+from flask import Blueprint, Response, jsonify, request
 
 from server.containers import Container
 
@@ -16,14 +16,15 @@ def try_calling_sointu_for_debug(sointu_service=Provide[Container.sointu_service
     )
 
 
-@api.route('/instruments')
+@api.route('/instrument', methods=['GET'])
 @inject
 def get_all_instruments(instruments_service=Provide[Container.instruments_service]):
     result = instruments_service.get_all_ymls()
     return jsonify(result)
 
 
-@api.route('/unit-templates')
+@api.route('/instrument', methods=['POST'])
 @inject
-def get_all_unit_templates(instruments_service=Provide[Container.instruments_service]):
-    return instruments_service.all_unit_templates
+def post_instrument_config(instruments_service=Provide[Container.instruments_service]):
+    # TODO: allow, for a single .yml, to choose between multiple stored configs
+    instruments_service.store_instrument_config(request.get_json())

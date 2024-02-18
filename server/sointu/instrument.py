@@ -9,9 +9,10 @@ from server.sointu.unit import Unit
 
 
 class Instrument:
-    def __init__(self: Self, name: str, *units) -> None:
+    def __init__(self: Self, name: str, *units, **kwargs) -> None:
         self.name: str = name
         self.units: List[Unit] = units
+        self.numvoices: int = kwargs.get("numvoices", 1)
 
     @classmethod
     def parse_file(cls: Self, file: Traversable) -> Self:
@@ -27,17 +28,23 @@ class Instrument:
         if 'units' not in yamlObject:
             raise InstrumentFormatError('Instrument YAML does not contain a `units` property.')
 
+        return Instrument.from_dict(yamlObject)
+
+    @classmethod
+    def from_dict(cls, dictionary: dict, params_from_original_values=True):
         return cls(
-            yamlObject['name'],
+            dictionary['name'],
             *[
                 Unit(
                     unitYamlObject['type'],
                     unitYamlObject['id'],
                     unitYamlObject['parameters'],
                     unitYamlObject['varargs'] if 'varargs' in unitYamlObject else None,
+                    params_from_original_values=params_from_original_values
                 )
-                for unitYamlObject in yamlObject['units']
-            ]
+                for unitYamlObject in dictionary['units']
+            ],
+            numvoices=dictionary['numvoices']
         )
 
     def randomize(

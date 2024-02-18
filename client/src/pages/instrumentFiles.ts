@@ -7,19 +7,36 @@ import {
 } from "../types";
 import Alpine from "alpinejs";
 
+const INSTRUMENTS_ENDPOINT = "/api/sointu/instrument";
+
 type InstrumentData = {
     all: { [file: string]: InstrumentFile },
     isLoading: boolean,
     load: () => void,
     isSubmitting: boolean,
-    submit: (file: string) => void,
-    discard: (file: string) => void,
+    submit: (file: InstrumentFile) => void,
+    discard: (file: InstrumentFile) => void,
     extendRanges: (file: string) => void,
     contractRanges: (file: string) => void,
     isChanged: string[],
     hasRange: string[],
     analyzeDebounce?: number | undefined,
 }
+
+declare global {
+    interface Window {
+        contractParamRange: (param: UnitParameter) => void,
+        extendParamRange: (param: UnitParameter) => void,
+        toggleAllParametersVariable: (yml: InstrumentFile, value: boolean) => void,
+        paramIsOriginal: (param: UnitParameter) => boolean,
+    }
+}
+
+// works because these are integer values, but these are Proxies
+// i.e. param.value !== param.originalValue unless explicitly set
+// but calculating the difference reduces it to a primitive integer value
+window.paramIsOriginal = (param: UnitParameter) =>
+    param.value - param.originalValue === 0;
 
 const analyzeState = (data: Component<InstrumentData>) => (current: InstrumentFile[]) => {
     if (data.analyzeDebounce) {
@@ -32,8 +49,14 @@ const analyzeState = (data: Component<InstrumentData>) => (current: InstrumentFi
         for (const item of Object.values(current)) {
             const allParams = item.instrument.units.flatMap(u => u.parameters);
             const anyRangeDefined = allParams.some(p => p.range);
+            const anyValueChanged = allParams.some(p =>
+                !window.paramIsOriginal(p)
+            );
             if (anyRangeDefined) {
                 data.hasRange.push(item.file);
+                data.isChanged.push(item.file);
+            } else if (anyValueChanged) {
+                data.isChanged.push(item.file);
             }
         }
     }, 150);
@@ -50,14 +73,6 @@ const allVariableParametersFor = (file: InstrumentFile) =>
 const currentlyVariableParametersFor = (file: InstrumentFile) =>
     allVariableParametersFor(file)
         .filter(p => !p.fixedByUser);
-
-declare global {
-    interface Window {
-        contractParamRange: (param: UnitParameter) => void,
-        extendParamRange: (param: UnitParameter) => void,
-        toggleAllParametersVariable: (yml: InstrumentFile, value: boolean) => void,
-    }
-}
 
 const EXPAND_FACTOR = 0.1;
 const CONTRACT_FACTOR = 0.2;
@@ -121,7 +136,7 @@ Alpine.data("instruments", (): WithInit<InstrumentData> => ({
 
     load: function(this: Component<InstrumentData>) {
         this.isLoading = true;
-        window.fetchJson("/api/sointu/instruments")
+        window.fetchJson(INSTRUMENTS_ENDPOINT)
             .then((res) => {
                 this.all = Object.fromEntries(
                     res.map((r: InstrumentFile) => [r.file, r])
@@ -133,12 +148,35 @@ Alpine.data("instruments", (): WithInit<InstrumentData> => ({
             });
     },
 
-    submit: function(this: Component<InstrumentData>, filename: string) {
-        alert("submit not implömöntid.");
+    submit: function(this: Component<InstrumentData>, file: InstrumentFile) {
+        window.postJson(INSTRUMENTS_ENDPOINT, file)
+            .then(console.log);
     },
 
-    discard: function(this: Component<InstrumentData>, filename: string) {
-        this.load();
+    discard: function(this: Component<InstrumentData>, file: InstrumentFile) {
+        // TODO: backend needs function just to reload this file
+        // or even better, solve this via the upcoming UNDO function instead of refetch
+        const filename = file.file;
+
+        // note: cursor only changes if mouse actually moves
+        // don't care for now, I thought I might like the effect
+        document.body.classList.add("waiting");
+
+        window.fetchJson(INSTRUMENTS_ENDPOINT)
+            .then((res: InstrumentFile[]) => {
+                const entry = res.find(r => r.file === filename);
+                if (!entry) {
+                    throw new Error("File not in Backend Response");
+                }
+                this.all[filename] = entry;
+            })
+            .catch((err) => {
+                console.error(err);
+                alert("Could not fetch original yml, see console for details.");
+            })
+            .finally(() => {
+                document.body.classList.remove("waiting");
+            });
     },
 
     extendRanges: function(this: Component<InstrumentData>, filename: string) {
@@ -260,13 +298,13 @@ export default () => `
                             </button>               
                             <button small
                                 :disabled="!isChanged.includes(yml.file)"
-                                @click="discard(yml.file)"
+                                @click="discard(yml)"
                             >
                                 <undo-icon></undo-icon>
                             </button>
                             <button small
                                 :disabled="!isChanged.includes(yml.file)"
-                                @click="submit(yml.file)"
+                                @click="submit(yml)"
                             >
                                 <save-icon></save-icon>
                             </button>
@@ -375,7 +413,7 @@ const instrumentUnits = (list: string, initCheckboxFunc: string) => `
                                     @click="reset(param)"
                                     :disabled="
                                         !param.range &&
-                                        param.value - param.originalValue === 0
+                                        paramIsOriginal(param)
                                     "
                                 >
                                     <undo-icon size="12"></undo-icon>                                

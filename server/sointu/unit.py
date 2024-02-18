@@ -2,23 +2,42 @@ from typing import (
     Self,
     Dict,
     List,
-    Optional,
+    Optional, Union,
 )
 from random import randrange
 
 
 class Unit:
+    type: str
+    id: int
+    parameters: Dict[str, int]
+    varargs: Optional[List[int]]
+
     def __init__(
             self: Self,
-            type: str,
+            unit_type: str,
             id: int,
-            parameters: Dict[str, int],
+            parameters: Union[Dict[str, int], List[Dict[str, int]]],
             varargs: Optional[List[int]] = None,
+            params_from_original_values=False
     ) -> None:
-        self.type = type
+        self.type = unit_type
         self.id = id
-        self.parameters = parameters
         self.varargs = varargs
+
+        if type(parameters) is dict:
+            self.parameters = parameters
+        elif type(parameters) is list:
+            # if given a List, this comes from the client and can hold "value" and/or "originalValue"
+            value_key = "value" if not params_from_original_values else "originalValue"
+            self.parameters = {
+                param['name']: param[value_key]
+                for param in parameters
+            }
+            # TODO: in these objects, there might also exist the "range"
+            # --> can takek a random value right from here.
+        else:
+            raise TypeError("Unit Parameters not given in any known format.")
 
     def randomize(
             self: Self,
