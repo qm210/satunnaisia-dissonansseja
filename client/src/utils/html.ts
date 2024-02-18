@@ -31,3 +31,9 @@ export const getInnerRect = (element: HTMLElement): Rect => {
         height: rect.height - borderTop - borderBottom
     };
 };
+
+export const toKebabCase = (camelCase: string) =>
+    camelCase
+        .replace(/([a-z])([A-Z])/g, "$1-$2")
+        .replace(/[\s_]+/g, "-")
+        .toLowerCase();

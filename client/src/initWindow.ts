@@ -1,15 +1,7 @@
 import {
-    AudioFileIcon,
-    BanIcon,
-    CrossIcon,
-    HeartIcon,
-    LameIcon, LeaveIcon,
-    LoadingIcon,
-    PlayIcon,
-    PoopIcon,
-    SaveIcon,
-    ToolsIcon,
-    TrashIcon
+    AudioFileIcon, BanIcon, CrossIcon, DownTrayIcon, HammerIcon, HeartIcon,
+    LameIcon, LeaveIcon, LoadingIcon, PlayIcon, PoopIcon, RandomIcon, SaveIcon,
+    ToolsIcon, TrashIcon, UndoIcon
 } from "./components/icons.ts";
 import { Context } from "pinecone-router/dist/types";
 import { Point } from "./utils/types";
@@ -146,6 +138,7 @@ export const initWindow = (alpine: typeof Alpine) => {
     window.range = (n: number) =>
         Array(n).fill(0)
             .map((_, i) => i);
+
 };
 
 const initCustomElements = () => {
@@ -163,4 +156,8 @@ const initCustomElements = () => {
     customElements.define("audiofile-icon", AudioFileIcon);
     customElements.define("tools-icon", ToolsIcon);
     customElements.define("leave-icon", LeaveIcon);
+    customElements.define("undo-icon", UndoIcon);
+    customElements.define("random-icon", RandomIcon);
+    customElements.define("hammer-icon", HammerIcon);
+    customElements.define("down-tray-icon", DownTrayIcon);
 };

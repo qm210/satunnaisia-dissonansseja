@@ -173,8 +173,8 @@ export default () => `
                             class="sticky left-24 bg-white"
                             >
                             <button
+                                small
                                 @click="startQueue(taggedGroup)"
-                                class="px-1 pt-2 pb-0"
                                 title="Play as queue"
                             >
                                 <play-icon></play-icon>

@@ -52,21 +52,24 @@ class InstrumentsService:
             )
             if template is None:
                 continue
-            parameters = [
-                {
+
+            parameters = []
+            for param_name in template.all_params:
+                value = unit.parameters.get(param_name)
+                if value is None:
+                    continue
+
+                parameters.append({
                     "name": param_name,
-                    "value":
-                        unit.parameters.get(param_name),
-                    "template":
-                        next(
-                            (t for t in template.param_templates if t.name == param_name),
-                            None
-                        ),
+                    "value": value,
+                    "originalValue": value,
+                    "template": next(
+                        (t for t in template.param_templates if t.name == param_name),
+                        None
+                    ),
                     "range": None
-                }
-                for param_name in template.all_params
-                if unit.parameters.get(param_name) is not None
-            ]
+                })
+
             result.append({
                 **unit.serialize(),
                 'parameters': parameters

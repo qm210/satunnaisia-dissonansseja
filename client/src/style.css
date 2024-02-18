@@ -67,6 +67,16 @@ button {
     background-color: #1a1a1a;
     cursor: pointer;
     transition: border-color 0.25s;
+    box-shadow: 1px 1px 4px #0004;
+}
+
+button[small] {
+    padding: 0.2em 0.4em 0;
+}
+
+button[small="very"] {
+    padding: 0 0.1em;
+    border-radius: 2px;
 }
 
 button:hover {

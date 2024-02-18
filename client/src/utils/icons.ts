@@ -1,7 +1,11 @@
+import { toKebabCase } from "./html.ts";
+
 type SvgIconProps = {
     children: string,
     viewBox: string
     defaultColor?: string,
+    strokeWidth?: string,
+    stroke?: string,
 };
 
 const getAttributesStringExcept = (names: string[], element: HTMLElement) =>
@@ -14,6 +18,19 @@ const getAttributesStringExcept = (names: string[], element: HTMLElement) =>
             `${attr.name}="${attr.value}"`
         )
         .join(" ");
+
+const getRestPropsString = (props: { [key: string]: string | undefined }): string => {
+    const attributes: string[] = [];
+    for (const key in props) {
+        if (!props[key]) {
+            continue;
+        }
+        attributes.push(
+            `${toKebabCase(key)}="${props[key]}"`
+        );
+    }
+    return attributes.join(" ");
+};
 
 const createSpinPart = (element: HTMLElement) => {
     const spin = element.getAttribute("spin");
@@ -44,11 +61,17 @@ const createSpinPart = (element: HTMLElement) => {
     };
 };
 
-export const addSvgPathAsShadow = (element: HTMLElement, { children, viewBox, defaultColor }: SvgIconProps) => {
+export const addSvgPathAsShadow = (element: HTMLElement, {
+    children,
+    viewBox,
+    defaultColor,
+    ...props
+}: SvgIconProps) => {
     const shadow = element.attachShadow({ mode: "open" });
     const size = element.getAttribute("size") || 24;
     const color = element.getAttribute("color") || defaultColor || "currentColor";
     const spin = createSpinPart(element);
+    const otherProps = getRestPropsString(props);
     const otherAttributes = getAttributesStringExcept(["size, color, spin"], element);
     viewBox ||= `0 0 ${size} ${size}`;
     children ||= "<slot></slot>";
@@ -62,6 +85,7 @@ export const addSvgPathAsShadow = (element: HTMLElement, { children, viewBox, de
                 fill="${color}"
                 ${otherAttributes}
                 ${spin.class}
+                ${otherProps}
             >
                 ${children}
             </svg>

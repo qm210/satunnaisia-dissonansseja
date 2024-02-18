@@ -229,7 +229,7 @@ export class ParameterSlider extends HTMLElement {
             const left = xPosition(this.range[0]);
             const right = xPosition(this.range[1]);
             this.handles.range!.style.left = left + "px";
-            this.handles.range!.style.width = (right - left) + "px";
+            this.handles.range!.style.width = (right - left + thickness) + "px";
         } else {
             this.handles.range!.style.display = "none";
         }
