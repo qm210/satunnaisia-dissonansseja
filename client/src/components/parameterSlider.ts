@@ -32,7 +32,7 @@ export class ParameterSlider extends HTMLElement {
     ];
 
     static ChangePosition = "change";
-    static ChangeRange = "changeRange";
+    static ChangeRange = "changerange";
 
     constructor() {
         super();
@@ -49,9 +49,9 @@ export class ParameterSlider extends HTMLElement {
                     border-radius: 4px;
                     position: relative; 
                 }
-                
+                                
                 #slider.disabled {
-                    background-color: #eee;
+                    background-color: #0001;
                 }
                                 
                 .handle {
@@ -103,6 +103,14 @@ export class ParameterSlider extends HTMLElement {
                 break;
             case "disabled":
                 this.disabled = !!newValue;
+                break;
+            case "range":
+                try {
+                    const parsed = newValue.split(",");
+                    this.range = [+parsed[0], +parsed[1]];
+                } catch {
+                    this.range = null;
+                }
                 break;
             default:
                 console.log("Unhandled Attribute Change", name, newValue, oldValue);

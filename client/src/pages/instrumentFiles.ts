@@ -24,7 +24,6 @@ Alpine.data("instruments", (): WithInit<InstrumentData> => ({
         window.fetchJson("/api/sointu/instruments")
             .then((res) => {
                 this.all = res;
-                console.log("All!", this.all);
                 this.$store.sointu.undoStack = [];
             })
             .finally(() => {
@@ -83,7 +82,8 @@ const instrumentUnits = (list: string) => `
             color: #cacaca;
         }
         
-        tr:first-of-type td {
+        /* the topmost parameter is actually on the second row */
+        tr:nth-of-type(2) td {
             border-top: var(--border);
         }
         
@@ -112,34 +112,35 @@ const instrumentUnits = (list: string) => `
                 }"
             >
             <tbody>
-            <template x-for="(param, index) in unit.parameters">
+            <tr>
+                <td
+                    class="text-left border border-black align-top"
+                    :rowspan="maxRows + 1"
+                >
+                    <div
+                        class="p-1 flex flex-col justify-between h-full font-bold cursor-pointer hover:bg-amber-50"
+                        @click="collapsed = !collapsed"                            
+                    >
+                        <div
+                            x-text="unit.type"
+                            class="flex-grow"
+                        ></div>
+                        <div
+                            x-text="collapsed ? 'Expand' : 'Collapse'"
+                            class="text-blue-700 underline text-xs"
+                        ></div>
+                    </div>
+                </td>
+            </tr>
+            <template x-for="param in unit.parameters">
                     <tr
                         @dblclick="console.log(Alpine.raw(param))"
                         :class="{
                             'param-fixed': param.template.fixed
                         }"
+                        class="hover:bg-amber-50"
                     >
-                        <td
-                            class="text-left border border-black align-top"
-                            :rowspan="maxRows"
-                            :style="{
-                                display: index === 0 ? 'table-cell' : 'none'
-                            }"
-                        >
-                            <div
-                                class="p-1 flex flex-col justify-between h-full font-bold cursor-pointer hover:bg-amber-50"
-                                @click="collapsed = !collapsed"                            
-                            >
-                                <div
-                                    x-text="unit.type"
-                                    class="flex-grow"
-                                ></div>
-                                <div
-                                    x-text="collapsed ? 'Expand' : 'Collapse'"
-                                    class="text-blue-700 underline text-xs"
-                                ></div>
-                            </div>
-                        </td>
+                        <td></td>   
                         <td
                             x-text="param.name"
                             x-show="!collapsed"
@@ -152,8 +153,8 @@ const instrumentUnits = (list: string) => `
                                 :min="param.template.min"
                                 :max="param.template.max"
                                 :disabled="param.template.fixed"
-                                @change="param.value = event.detail.value"
-                                @changeRange="param.range = event.detail.range"
+                                @change="param.value = event.detail"
+                                @changerange="param.range = event.detail"
                             ></parameter-slider>
                         </td>
                         <td
