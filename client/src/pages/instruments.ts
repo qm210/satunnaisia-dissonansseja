@@ -1,6 +1,6 @@
 import {
     Component,
-    InstrumentFile,
+    BaseInstrumentFile,
     InstrumentUnit,
     UnitParameter,
     WithInit
@@ -10,12 +10,12 @@ import Alpine from "alpinejs";
 const INSTRUMENTS_ENDPOINT = "/api/sointu/instrument";
 
 type InstrumentData = {
-    all: { [file: string]: InstrumentFile },
+    all: { [file: string]: BaseInstrumentFile },
     isLoading: boolean,
     load: () => void,
     isSubmitting: boolean,
-    submit: (file: InstrumentFile) => void,
-    discard: (file: InstrumentFile) => void,
+    submit: (file: BaseInstrumentFile) => void,
+    discard: (file: BaseInstrumentFile) => void,
     extendRanges: (file: string) => void,
     contractRanges: (file: string) => void,
     isChanged: string[],
@@ -27,7 +27,7 @@ declare global {
     interface Window {
         contractParamRange: (param: UnitParameter) => void,
         extendParamRange: (param: UnitParameter) => void,
-        toggleAllParametersVariable: (yml: InstrumentFile, value: boolean) => void,
+        toggleAllParametersVariable: (yml: BaseInstrumentFile, value: boolean) => void,
         paramIsOriginal: (param: UnitParameter) => boolean,
     }
 }
@@ -38,7 +38,7 @@ declare global {
 window.paramIsOriginal = (param: UnitParameter) =>
     param.value - param.originalValue === 0;
 
-const analyzeState = (data: Component<InstrumentData>) => (current: InstrumentFile[]) => {
+const analyzeState = (data: Component<InstrumentData>) => (current: BaseInstrumentFile[]) => {
     if (data.analyzeDebounce) {
         clearTimeout(data.analyzeDebounce);
     }
@@ -62,7 +62,7 @@ const analyzeState = (data: Component<InstrumentData>) => (current: InstrumentFi
     }, 150);
 };
 
-const allVariableParametersFor = (file: InstrumentFile) =>
+const allVariableParametersFor = (file: BaseInstrumentFile) =>
     file.instrument.units
         .flatMap(u =>
             u.parameters.filter(p =>
@@ -70,7 +70,7 @@ const allVariableParametersFor = (file: InstrumentFile) =>
             )
         );
 
-const currentlyVariableParametersFor = (file: InstrumentFile) =>
+const currentlyVariableParametersFor = (file: BaseInstrumentFile) =>
     allVariableParametersFor(file)
         .filter(p => !p.fixedByUser);
 
@@ -116,7 +116,7 @@ window.extendParamRange = (param: UnitParameter) => {
     ];
 };
 
-window.toggleAllParametersVariable = (yml: InstrumentFile, value: boolean) => {
+window.toggleAllParametersVariable = (yml: BaseInstrumentFile, value: boolean) => {
     for (const param of allVariableParametersFor(yml)) {
         param.fixedByUser = !value;
     }
@@ -139,7 +139,7 @@ Alpine.data("instruments", (): WithInit<InstrumentData> => ({
         window.fetchJson(INSTRUMENTS_ENDPOINT)
             .then((res) => {
                 this.all = Object.fromEntries(
-                    res.map((r: InstrumentFile) => [r.file, r])
+                    res.map((r: BaseInstrumentFile) => [r.file, r])
                 );
                 this.$store.sointu.undoStack = [];
             })
@@ -148,12 +148,12 @@ Alpine.data("instruments", (): WithInit<InstrumentData> => ({
             });
     },
 
-    submit: function(this: Component<InstrumentData>, file: InstrumentFile) {
+    submit: function(this: Component<InstrumentData>, file: BaseInstrumentFile) {
         window.postJson(INSTRUMENTS_ENDPOINT, file)
             .then(console.log);
     },
 
-    discard: function(this: Component<InstrumentData>, file: InstrumentFile) {
+    discard: function(this: Component<InstrumentData>, file: BaseInstrumentFile) {
         // TODO: backend needs function just to reload this file
         // or even better, solve this via the upcoming UNDO function instead of refetch
         const filename = file.file;
@@ -163,7 +163,7 @@ Alpine.data("instruments", (): WithInit<InstrumentData> => ({
         document.body.classList.add("waiting");
 
         window.fetchJson(INSTRUMENTS_ENDPOINT)
-            .then((res: InstrumentFile[]) => {
+            .then((res: BaseInstrumentFile[]) => {
                 const entry = res.find(r => r.file === filename);
                 if (!entry) {
                     throw new Error("File not in Backend Response");
@@ -237,6 +237,7 @@ export default () => `
                         totalVariableParams: 0,
                         
                         initCheckbox() {
+                            console.log(Alpine.raw(yml));
                             this.varyingParams = currentlyVariableParametersFor(yml).length;
                             this.totalVariableParams = allVariableParametersFor(yml).length;
                             
@@ -355,7 +356,7 @@ const instrumentUnits = (list: string, initCheckboxFunc: string) => `
                 (rows, row) => Math.max(rows, row.parameters.length, 1)
             , 0)
         }"
-        class="flex gap-2 select-none"
+        class="flex gap-1 select-none pb-1"
     >
         <template x-for="unit in ${list}" :key="unit.id">
             <table

@@ -1,16 +1,24 @@
+from dataclasses import dataclass
 from typing import (
     Self,
     Dict,
     List,
-    Optional, Union,
+    Optional, Union, Tuple,
 )
 from random import randrange
+
+
+@dataclass
+class UnitParam:
+    name: str
+    value: int
+    range: Optional[Tuple[int]] = None  # don't care for now
 
 
 class Unit:
     type: str
     id: int
-    parameters: Dict[str, int]
+    parameters: List[UnitParam]
     varargs: Optional[List[int]]
 
     def __init__(
@@ -26,18 +34,25 @@ class Unit:
         self.varargs = varargs
 
         if type(parameters) is dict:
-            self.parameters = parameters
+            self.parameters = [
+                UnitParam(name, value)
+                for name, value in parameters.items()
+            ]
         elif type(parameters) is list:
-            # if given a List, this comes from the client and can hold "value" and/or "originalValue"
+            # if given a List, this might come from the client, therefore hold the "originalValue", also "range"
             value_key = "value" if not params_from_original_values else "originalValue"
-            self.parameters = {
-                param['name']: param[value_key]
+            self.parameters = [
+                UnitParam(param['name'], param[value_key], param.get('range'))
                 for param in parameters
-            }
-            # TODO: in these objects, there might also exist the "range"
-            # --> can takek a random value right from here.
+            ]
         else:
             raise TypeError("Unit Parameters not given in any known format.")
+
+    def get_parameter(self, name: str) -> Optional[int]:
+        return next(
+            (param for param in self.parameters if param.name == name),
+            None
+        )
 
     def randomize(
             self: Self,

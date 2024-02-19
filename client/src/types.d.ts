@@ -33,13 +33,14 @@ export type TaggedFileGroup = {
     tag: string
 };
 
-export type InstrumentFile = {
+export type BaseInstrumentFile = {
     file: string,
     error: any,
-    instrument: YmlInstrument,
+    instrument: BaseInstrument,
+    params: InstrumentParamConfig[],
 };
 
-export type YmlInstrument = {
+export type BaseInstrument = {
     name: string,
     numvoices: number,
     units: InstrumentUnit[],
@@ -52,13 +53,23 @@ export type InstrumentUnit = {
     varargs?: number[]
 };
 
-export type UnitParameter = {
-    name: string,
-    range: [number, number] | null,
-    template: UnitParameterTemplate
+export type InstrumentParamConfig = {
+    paramName: string,
     value: number,
+    range: OptionalRange,
+    unitType: string,
+    unitId: number,
+    template: UnitParameterTemplate
     originalValue: number,
     fixedByUser?: boolean, // frontend field to toggle for the global randomization operations (extend range etc.)
+}
+
+export type OptionalRange = [number, number] | null;
+
+export type UnitParameter = {
+    name: string,
+    value: number,
+    range?: OptionalRange,
 };
 
 export type UnitParameterTemplate = {

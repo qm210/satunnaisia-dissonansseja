@@ -3,7 +3,7 @@ import CurrentWavPage from "./currentWav.ts";
 import UnsavedRatings from "./unsavedRatings.ts";
 import LoginPage from "./login.ts";
 import ExecuteSointuPage from "./executeSointu.ts";
-import InstrumentsPage from "./instrumentFiles.ts";
+import InstrumentsPage from "./instruments.ts";
 import { Point } from "../utils/types";
 
 
