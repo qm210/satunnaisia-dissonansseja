@@ -2,7 +2,7 @@ from re import sub
 
 from flask.json.provider import DefaultJSONProvider
 
-from server.model.instrument_config import ParamConfig, ParamConfigWithTemplate
+from server.model.instrument_config import ParamConfig, ParamConfigWithTemplate, InstrumentConfig
 from server.sointu.instrument import Instrument
 from server.sointu.unit import Unit
 from server.sointu.unit_templates import UnitParamFixed, UnitParamFixedSpecial, UnitParamFixedBool, UnitParamTemplate
@@ -24,21 +24,24 @@ def with_dict_in_camel_case(obj):
 class JsonProvider(DefaultJSONProvider):
     @staticmethod
     def default(obj):
-        if isinstance(obj, Instrument):
-            return obj.serialize()
-        if isinstance(obj, Unit):
-            return obj.serialize()
+        result = None
 
-        # the default provider will strip away nested custom classes, i.e. deal with these first, explicitly
-        nested_objects = {}
+        if hasattr(obj, 'serialize'):
+            result = obj.serialize()
+
+        # the default provider will strip away fields of extended custom classes, i.e. deal with these first, explicitly
+        extended = {}
         if isinstance(obj, ParamConfigWithTemplate):
-            nested_objects["template"] = JsonProvider.default(obj.template)
+            extended["template"] = JsonProvider.default(obj.template)
+            extended["originalValue"] = obj.original_value
+            extended["originalRange"] = obj.original_range
 
-        result = DefaultJSONProvider.default(obj)
+        if result is None:
+            result = DefaultJSONProvider.default(obj)
 
-        for key in nested_objects:
-            result[key] = nested_objects[key]
-
+        for key in extended:
+            result[key] = extended[key]
+            
         # don't really get why Python would just let me override the class definitions, but anyway.
         if isinstance(obj, UnitParamTemplate):
             result['fixed'] = False

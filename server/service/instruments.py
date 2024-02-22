@@ -4,6 +4,7 @@ from server.model.instrument_config import InstrumentConfig, ParamConfigWithTemp
 from server.sointu.error import InstrumentFormatError
 from server.sointu.instrument import Instrument
 from server.sointu.unit_templates import collect_all_unit_templates
+from server.utils.files import calc_file_hash
 
 
 class InstrumentsService:
@@ -32,31 +33,44 @@ class InstrumentsService:
         return self.get_merged_instrument_configs(base_instruments)
 
     def get_merged_instrument_configs(self, base_instruments):
-        stored_configs = self.instrument_config_repository.get_all()
-        # for now: only give out the base_instruments in prepared format
-        # then fix the frontend
-        # then merge the stored configs in there
-
-        return base_instruments
+        """
+        Current logic is as follows:
+        - new instruments get there by having a .yml in the instruments/ folder.
+        - if there is no entry in the DB with that file hash, give it out as a new config
+        - if, instead, there are entries in the DB with that file hash, give these out as a new config
+              but then ignore the base YML.
+              -> If this changes, the hash changes, and then that's not ignored anymore..
+        """
+        instrument_configs = self.instrument_config_repository.get_all()
+        known_hashes = [
+            config.base_yml_hash
+            for config in instrument_configs
+        ]
+        for yml in base_instruments:
+            if yml['baseYmlHash'] in known_hashes:
+                continue
+            instrument_configs.append(
+                InstrumentConfig.from_json(yml, keep_params_configs=True)
+            )
+        return instrument_configs
 
     def get_base_instruments(self):
         result = []
         for yml_file in self.folder.glob('*.yml'):
             entry = {
-                "file": yml_file.name,
-                "error": None,
-                "instrument": None,
+                "baseYmlFilename": yml_file.name,
+                "baseYmlHash": calc_file_hash(yml_file),
+                "baseInstrument": None,
             }
             try:
                 instrument = Instrument.parse_file(yml_file)
             except InstrumentFormatError as ex:
-                entry["error"] = str(ex)
+                self.logger.warn(f"Error in parse_file {yml_file}: {ex}")
                 continue
 
-            entry["instrument"] = instrument.serialize()
+            entry["baseInstrument"] = instrument.serialize(use_templates=self.all_unit_templates)
 
-            # TODO -- THIS IS NOT CORRECT YET
-            entry["params"] = self.build_params_config_with_templates(instrument.units)
+            entry["paramsConfig"] = self.build_params_config_with_templates(instrument.units)
 
             result.append(entry)
 
@@ -85,12 +99,15 @@ class InstrumentsService:
                     (t for t in unit_template.param_templates if t.name == param_name),
                     None
                 )
-                config_with_template = ParamConfigWithTemplate(unit, param, template=param_template)
+                config_with_template = ParamConfigWithTemplate.parse_from(
+                    unit,
+                    param,
+                    template=param_template
+                )
                 result.append(config_with_template)
 
         return result
 
     def store_instrument_config(self, json):
         config = InstrumentConfig.from_json(json)
-        result = self.instrument_config_repository.post(config)
-        print("stored now", config, result)
+        self.instrument_config_repository.upsert(config)

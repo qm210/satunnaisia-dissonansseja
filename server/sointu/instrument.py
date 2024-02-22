@@ -6,6 +6,7 @@ from yaml import safe_load
 from server.sointu import templates_path
 from server.sointu.error import InstrumentFormatError
 from server.sointu.unit import Unit
+from server.sointu.unit_templates import UnitTemplate
 
 
 class Instrument:
@@ -31,7 +32,7 @@ class Instrument:
         return Instrument.from_dict(yamlObject)
 
     @classmethod
-    def from_dict(cls, dictionary: dict, params_from_original_values=True):
+    def from_dict(cls, dictionary: dict):
         return cls(
             dictionary['name'],
             *[
@@ -40,7 +41,6 @@ class Instrument:
                     unitYamlObject['id'],
                     unitYamlObject['parameters'],
                     unitYamlObject['varargs'] if 'varargs' in unitYamlObject else None,
-                    params_from_original_values=params_from_original_values
                 )
                 for unitYamlObject in dictionary['units']
             ],
@@ -63,14 +63,24 @@ class Instrument:
             ]
         }
 
-    def serialize(self: Self) -> dict:
+    def serialize(
+            self: Self,
+            use_templates: Optional[List[UnitTemplate]] = None
+    ) -> dict:
         return {
             'name': self.name,
             'numvoices': 1,
-            'units': [
-                unit.serialize()
-                for unit in self.units
-            ]
+            'units': list(filter(
+                lambda unit: unit is not None,
+                [
+                    serialized_unit
+                    for unit in self.units
+                    for serialized_unit in [
+                    unit.serialize(use_templates=use_templates)
+                ]
+                    if serialized_unit is not None
+                ]
+            ))
         }
 
 

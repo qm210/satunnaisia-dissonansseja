@@ -1,44 +1,53 @@
 import {
     Component,
-    BaseInstrumentFile,
-    InstrumentUnit,
-    UnitParameter,
-    WithInit
+    InstrumentConfig,
+    BaseUnit,
+    BaseParameter,
+    WithInit, UnitParameterConfig, InstrumentConfigId
 } from "../types";
 import Alpine from "alpinejs";
 
 const INSTRUMENTS_ENDPOINT = "/api/sointu/instrument";
 
+// describes one param (valid only per baseInstrument - else, unitId might differ!) uniquely
+type ParameterDescriptor = Pick<UnitParameterConfig, "unitId" | "paramName">;
+
+type FixedByUserRecord =
+    Record<InstrumentConfigId, ParameterDescriptor[]>;
+
 type InstrumentData = {
-    all: { [file: string]: BaseInstrumentFile },
+    all: { [file: string]: InstrumentConfig },
     isLoading: boolean,
     load: () => void,
     isSubmitting: boolean,
-    submit: (file: BaseInstrumentFile) => void,
-    discard: (file: BaseInstrumentFile) => void,
-    extendRanges: (file: string) => void,
-    contractRanges: (file: string) => void,
-    isChanged: string[],
-    hasRange: string[],
+    submit: (file: InstrumentConfig) => void,
+    discard: (file: InstrumentConfig) => void,
+    extendRanges: (instrumentId: InstrumentConfigId) => void,
+    contractRanges: (instrumentId: InstrumentConfigId) => void,
+    isChanged: InstrumentConfigId[],
+    hasRange: InstrumentConfigId[],
+    fixedByUser: FixedByUserRecord,
     analyzeDebounce?: number | undefined,
 }
 
+// don't wanna extend this shit elsewhere, just monkey-patch it here for now.
 declare global {
     interface Window {
-        contractParamRange: (param: UnitParameter) => void,
-        extendParamRange: (param: UnitParameter) => void,
-        toggleAllParametersVariable: (yml: BaseInstrumentFile, value: boolean) => void,
-        paramIsOriginal: (param: UnitParameter) => boolean,
+        contractParamRange: (param: UnitParameterConfig) => void,
+        extendParamRange: (param: UnitParameterConfig) => void,
+        toggleAllParametersVariable: (yml: InstrumentConfig, value: boolean) => void,
+        paramIsOriginal: (param: UnitParameterConfig) => boolean,
     }
 }
 
 // works because these are integer values, but these are Proxies
 // i.e. param.value !== param.originalValue unless explicitly set
 // but calculating the difference reduces it to a primitive integer value
-window.paramIsOriginal = (param: UnitParameter) =>
+window.paramIsOriginal = (param: UnitParameterConfig) =>
     param.value - param.originalValue === 0;
 
-const analyzeState = (data: Component<InstrumentData>) => (current: BaseInstrumentFile[]) => {
+
+const analyzeState = (data: Component<InstrumentData>) => (current: InstrumentConfig[]) => {
     if (data.analyzeDebounce) {
         clearTimeout(data.analyzeDebounce);
     }
@@ -47,37 +56,43 @@ const analyzeState = (data: Component<InstrumentData>) => (current: BaseInstrume
         data.isChanged = [];
         data.hasRange = [];
         for (const item of Object.values(current)) {
-            const allParams = item.instrument.units.flatMap(u => u.parameters);
-            const anyRangeDefined = allParams.some(p => p.range);
-            const anyValueChanged = allParams.some(p =>
-                !window.paramIsOriginal(p)
-            );
+            const anyRangeDefined = item.paramsConfig
+                .some(p => p.range);
+            const anyValueChanged = item.paramsConfig
+                .some(p =>
+                    !window.paramIsOriginal(p as any)
+                );
             if (anyRangeDefined) {
-                data.hasRange.push(item.file);
-                data.isChanged.push(item.file);
+                data.hasRange.push(item.id);
+                data.isChanged.push(item.id);
             } else if (anyValueChanged) {
-                data.isChanged.push(item.file);
+                data.isChanged.push(item.id);
             }
         }
     }, 150);
 };
 
-const allVariableParametersFor = (file: BaseInstrumentFile) =>
-    file.instrument.units
-        .flatMap(u =>
-            u.parameters.filter(p =>
-                !p.template.fixed
-            )
-        );
+const allVariableParametersFor = (file: InstrumentConfig) =>
+    file.paramsConfig
+        .filter(p => !p.template.fixed);
 
-const currentlyVariableParametersFor = (file: BaseInstrumentFile) =>
+const matchesParam = (p1: ParameterDescriptor) =>
+    (p2: ParameterDescriptor) =>
+        p1.paramName === p2.paramName &&
+        p1.unitId === p2.unitId;
+
+const isNotFixedByUser = (fixedByUser: ParameterDescriptor[]) =>
+    (p: UnitParameterConfig) =>
+        !fixedByUser.find(matchesParam(p));
+
+const currentlyVariableParametersFor = (file: InstrumentConfig, fixedByUserRecord: FixedByUserRecord) =>
     allVariableParametersFor(file)
-        .filter(p => !p.fixedByUser);
+        .filter(isNotFixedByUser(fixedByUserRecord[file.id]));
 
 const EXPAND_FACTOR = 0.1;
 const CONTRACT_FACTOR = 0.2;
 
-window.contractParamRange = (param: UnitParameter) => {
+window.contractParamRange = (param: UnitParameterConfig) => {
     if (!param.range) {
         return;
     }
@@ -94,7 +109,7 @@ window.contractParamRange = (param: UnitParameter) => {
     }
 };
 
-window.extendParamRange = (param: UnitParameter) => {
+window.extendParamRange = (param: UnitParameterConfig) => {
     if (!param.range) {
         param.range = [param.value, param.value];
     }
@@ -116,9 +131,31 @@ window.extendParamRange = (param: UnitParameter) => {
     ];
 };
 
-window.toggleAllParametersVariable = (yml: BaseInstrumentFile, value: boolean) => {
-    for (const param of allVariableParametersFor(yml)) {
-        param.fixedByUser = !value;
+const toggleFixedByUser = (param: UnitParameterConfig, instr: InstrumentConfig, fixedByUserRecord: FixedByUserRecord, isNowFixed: boolean) => {
+    fixedByUserRecord[instr.id] = fixedByUserRecord[instr.id]
+        .filter(pd => !matchesParam(param)(pd));
+
+    if (!isNowFixed) {
+        return;
+    }
+    fixedByUserRecord[instr.id].push({
+        paramName: param.paramName,
+        unitId: param.unitId
+    });
+};
+
+const looksLikeEnum = (param: UnitParameterConfig) =>
+    param.template.max < 10;
+
+const initFixedByUser = (fixedByUser: FixedByUserRecord, instrumentConfig: InstrumentConfig) => {
+    fixedByUser[instrumentConfig.id] = [];
+    for (const param of instrumentConfig.paramsConfig) {
+        if (param.template.fixed) {
+            // if the param is really fixed anyway, the fixedByUser won't help it either
+            continue;
+        }
+        const fixedByDefault = looksLikeEnum(param);
+        toggleFixedByUser(param, instrumentConfig, fixedByUser, fixedByDefault);
     }
 };
 
@@ -126,6 +163,7 @@ Alpine.data("instruments", (): WithInit<InstrumentData> => ({
     all: {},
     isChanged: [],
     hasRange: [],
+    fixedByUser: {},
     isLoading: true,
     isSubmitting: false,
 
@@ -137,38 +175,41 @@ Alpine.data("instruments", (): WithInit<InstrumentData> => ({
     load: function(this: Component<InstrumentData>) {
         this.isLoading = true;
         window.fetchJson(INSTRUMENTS_ENDPOINT)
-            .then((res) => {
-                this.all = Object.fromEntries(
-                    res.map((r: BaseInstrumentFile) => [r.file, r])
-                );
-                this.$store.sointu.undoStack = [];
+            .then((response) => {
+                this.all = {};
+                for (const entry of response) {
+                    this.all[entry.id] = entry;
+                    initFixedByUser(this.fixedByUser, entry);
+                }
+                this.$store.sointu.undoStack = []; // not implemented yet, sorriiiiiie..!!11iii111iieee..!1
             })
             .finally(() => {
                 this.isLoading = false;
             });
     },
 
-    submit: function(this: Component<InstrumentData>, file: BaseInstrumentFile) {
+    submit: function(this: Component<InstrumentData>, file: InstrumentConfig) {
         window.postJson(INSTRUMENTS_ENDPOINT, file)
             .then(console.log);
     },
 
-    discard: function(this: Component<InstrumentData>, file: BaseInstrumentFile) {
+    discard: function(this: Component<InstrumentData>, instrumentConfig: InstrumentConfig) {
         // TODO: backend needs function just to reload this file
         // or even better, solve this via the upcoming UNDO function instead of refetch
-        const filename = file.file;
 
         // note: cursor only changes if mouse actually moves
         // don't care for now, I thought I might like the effect
         document.body.classList.add("waiting");
 
         window.fetchJson(INSTRUMENTS_ENDPOINT)
-            .then((res: BaseInstrumentFile[]) => {
-                const entry = res.find(r => r.file === filename);
+            .then((res: InstrumentConfig[]) => {
+                const entry = res.find(r =>
+                    r.id === instrumentConfig.id
+                );
                 if (!entry) {
                     throw new Error("File not in Backend Response");
                 }
-                this.all[filename] = entry;
+                this.all[instrumentConfig.id] = entry;
             })
             .catch((err) => {
                 console.error(err);
@@ -179,30 +220,32 @@ Alpine.data("instruments", (): WithInit<InstrumentData> => ({
             });
     },
 
-    extendRanges: function(this: Component<InstrumentData>, filename: string) {
-        for (const param of currentlyVariableParametersFor(this.all[filename])) {
+    extendRanges: function(this: Component<InstrumentData>, id: InstrumentConfigId) {
+        for (const param of currentlyVariableParametersFor(this.all[id], this.fixedByUser)) {
             window.extendParamRange(param);
         }
     },
 
-    contractRanges: function(this: Component<InstrumentData>, filename: string) {
-        for (const param of currentlyVariableParametersFor(this.all[filename])) {
+    contractRanges: function(this: Component<InstrumentData>, id: InstrumentConfigId) {
+        for (const param of currentlyVariableParametersFor(this.all[id], this.fixedByUser)) {
             window.contractParamRange(param);
         }
     }
 
 }));
 
-Alpine.data("unitParameterList", (unit: InstrumentUnit) => ({
-    collapsed: unit.parameters
-        .every(p => p.template.fixed),
+Alpine.data("unitParameterList", (unit: BaseUnit, yml: InstrumentConfig) => ({
+    collapsed: unit.parameters.every(param => {
+        const template = findParamConfig(yml, unit, param).template;
+        return template.fixed;
+    }),
 
-    reset(param: UnitParameter) {
+    reset(param: UnitParameterConfig) {
         param.value = param.originalValue;
         param.range = null;
     },
 
-    centerValue(param: UnitParameter) {
+    centerValue(param: UnitParameterConfig) {
         if (!param.range) {
             return;
         }
@@ -213,9 +256,22 @@ Alpine.data("unitParameterList", (unit: InstrumentUnit) => ({
 
 }));
 
+const findParamConfig = (instrumentConfig: InstrumentConfig, unit: BaseUnit, param: BaseParameter) => {
+    const result = instrumentConfig.paramsConfig.find(p =>
+        p.unitId === unit.id && p.paramName === param.name
+    );
+    if (!result) {
+        console.error("Did not find Param", param.name, unit.id, "inside", instrumentConfig);
+    }
+    return result!;
+};
+
 // f'ing interfacing for the inline Alpine, es ischd eben NICHD lecker
 (window as any).allVariableParametersFor = allVariableParametersFor;
 (window as any).currentlyVariableParametersFor = currentlyVariableParametersFor;
+(window as any).findParamConfig = findParamConfig;
+(window as any).isNotFixedByUser = isNotFixedByUser;
+(window as any).toggleFixedByUser = toggleFixedByUser;
 
 export default () => `
     <div
@@ -229,7 +285,7 @@ export default () => `
             <loading-icon spin="2s" size="80"></loading-icon>
         </div>
         <div class="flex flex-col gap-2 w-full">
-            <template x-for="yml in all" :key="yml.file">
+            <template x-for="yml in Object.values(all)" :key="yml.id">
                 <div
                     class="my-4"
                     x-data="{
@@ -237,10 +293,13 @@ export default () => `
                         totalVariableParams: 0,
                         
                         initCheckbox() {
-                            console.log(Alpine.raw(yml));
-                            this.varyingParams = currentlyVariableParametersFor(yml).length;
-                            this.totalVariableParams = allVariableParametersFor(yml).length;
+                            this.varyingParams = currentlyVariableParametersFor(yml, fixedByUser).length;
+                            this.totalVariableParams = allVariableParametersFor(yml, fixedByUser).length;
                             
+                            // removed the checkbox for now
+                            if (!$refs.variablesCheckbox) {
+                                return;
+                            }
                             $refs.variablesCheckbox.indeterminate = false;
                             if (this.varyingParams === this.totalVariableParams) {
                                 $refs.variablesCheckbox.checked = true;
@@ -261,12 +320,12 @@ export default () => `
                             @click="console.log(yml)"
                         >
                             <span
-                                x-text="yml.file"
+                                x-text="yml.baseYmlFilename"
                                 class="text-sm"
                             ></span>
                             :&nbsp;
                             <span
-                                x-text="yml.instrument.name"
+                                x-text="yml.name"
                                 class="text-xl"
                             ></span>
                         </div>
@@ -276,35 +335,35 @@ export default () => `
                             <span
                                 x-text="'varying: ' + varyingParams + '/' + totalVariableParams + ' parameters'"
                             ></span>
-                            <input
-                                type="checkbox"
-                                x-ref="variablesCheckbox"
-                                @change="
-                                    toggleAllParametersVariable(yml, event.target.checked);
-                                    initCheckbox();
-                                "
-                            />
+<!--                            <input-->
+<!--                                type="checkbox"-->
+<!--                                x-ref="variablesCheckbox"-->
+<!--                                @change="-->
+<!--                                    toggleAllParametersVariable(yml, event.target.checked);-->
+<!--                                    initCheckbox();-->
+<!--                                "-->
+<!--                            />-->
                         </div>
                         <div class="select-none">
                             <button small
-                                @click="extendRanges(yml.file)"
+                                @click="extendRanges(yml.id)"
                             >
                                 <random-icon></random-icon>
                             </button>         
                             <button small
-                                :disabled="!hasRange.includes(yml.file)"
-                                @click="contractRanges(yml.file)"
+                                :disabled="!hasRange.includes(yml.id)"
+                                @click="contractRanges(yml.id)"
                             >
                                 <hammer-icon></hammer-icon>
                             </button>               
                             <button small
-                                :disabled="!isChanged.includes(yml.file)"
+                                :disabled="!isChanged.includes(yml.id)"
                                 @click="discard(yml)"
                             >
                                 <undo-icon></undo-icon>
                             </button>
                             <button small
-                                :disabled="!isChanged.includes(yml.file)"
+                                :disabled="!isChanged.includes(yml.id)"
                                 @click="submit(yml)"
                             >
                                 <save-icon></save-icon>
@@ -314,7 +373,7 @@ export default () => `
                     <div
                         class="flex flex-col overflow-x-auto"
                     >
-                        ${instrumentUnits("yml.instrument.units", "initCheckbox")}
+                        ${instrumentUnits("yml", "initCheckbox")}
                     </div>
                 </div>
             </template>
@@ -322,7 +381,7 @@ export default () => `
     </div>
 `;
 
-const instrumentUnits = (list: string, initCheckboxFunc: string) => `
+const instrumentUnits = (instrVar: string, initCheckboxFunc: string) => `
     <style>
         td {
             height: 2rem;
@@ -352,17 +411,16 @@ const instrumentUnits = (list: string, initCheckboxFunc: string) => `
     </style>
     <div
         x-data="{
-            maxRows: ${list}.reduce(
+            maxRows: ${instrVar}.baseInstrument.units.reduce(
                 (rows, row) => Math.max(rows, row.parameters.length, 1)
             , 0)
         }"
         class="flex gap-1 select-none pb-1"
     >
-        <template x-for="unit in ${list}" :key="unit.id">
+        <template x-for="unit in ${instrVar}.baseInstrument.units" :key="unit.id">
             <table
-                @contextmenu="console.log(Alpine.raw(${list}))"
                 class="border-collapse"
-                x-data="unitParameterList(unit)"
+                x-data="unitParameterList(unit, ${instrVar})"
             >
             <tbody>
                 <tr>
@@ -385,9 +443,12 @@ const instrumentUnits = (list: string, initCheckboxFunc: string) => `
                         </div>
                     </td>
                 </tr>
-                <template x-for="param in unit.parameters">
+                <template x-for="baseParam in unit.parameters">
                     <tr
-                        x-data="{ hovered: false }"
+                        x-data="{
+                            hovered: false,
+                            param: findParamConfig(${instrVar}, unit, baseParam),
+                        }"
                         @dblclick="console.log(Alpine.raw(param))"
                         class="hover:bg-amber-50"
                         :class="{
@@ -402,7 +463,7 @@ const instrumentUnits = (list: string, initCheckboxFunc: string) => `
                             x-show="!collapsed"
                         >
                             <span
-                                x-text="param.name"
+                                x-text="baseParam.name"
                                 x-show="!hovered"
                             ></span>                        
                             <div
@@ -459,20 +520,23 @@ const instrumentUnits = (list: string, initCheckboxFunc: string) => `
                         <td
                             x-show="!collapsed"
                             class="px-1 text-right"
+                            x-data="{
+                              userFixed: !isNotFixedByUser(fixedByUser[${instrVar}.id])(param)
+                            }"
                         >
                             <span
                                 x-text="param.value"
                                 x-show="!hovered"
                                 :class="{
-                                    'param-fixed-by-user': param.fixedByUser
+                                    'param-fixed-by-user': userFixed
                                 }"
                             ></span>
                             <input
                                 type="checkbox"
                                 x-show="hovered"
-                                :checked="!param.fixedByUser"
+                                :checked="!userFixed"
                                 @change="
-                                    param.fixedByUser = !event.target.checked;
+                                    toggleFixedByUser(param, ${instrVar}, fixedByUser, !userFixed);
                                     ${initCheckboxFunc}();
                                 "
                             />

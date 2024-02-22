@@ -1,6 +1,7 @@
 import string
+from hashlib import sha256
 from pathlib import Path
-from typing import Optional, List
+from typing import Optional, List, Union
 
 
 def read_subfolders_as_tags(parent: Path, pattern: string = "", except_files: Optional[List[string]] = None):
@@ -31,3 +32,15 @@ def read_subfolders_as_tags(parent: Path, pattern: string = "", except_files: Op
         {'tag': t[0], 'files': t[1]}
         for t in result.items()
     ]
+
+
+def calc_file_hash(filepath: Union[Path, str]) -> str:
+    h = sha256()
+    chunk_byte_size = 8192
+    with open(filepath, 'rb') as file:
+        while True:
+            chunk = file.read(chunk_byte_size)
+            if not chunk:
+                break
+            h.update(chunk)
+    return h.hexdigest()

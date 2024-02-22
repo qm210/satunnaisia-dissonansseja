@@ -7,12 +7,14 @@ from typing import (
 )
 from random import randrange
 
+from server.sointu.unit_templates import UnitTemplate
+
 
 @dataclass
 class UnitParam:
     name: str
     value: int
-    range: Optional[Tuple[int]] = None  # don't care for now
+    range: Optional[Tuple[int]] = None
 
 
 class Unit:
@@ -27,7 +29,6 @@ class Unit:
             id: int,
             parameters: Union[Dict[str, int], List[Dict[str, int]]],
             varargs: Optional[List[int]] = None,
-            params_from_original_values=False
     ) -> None:
         self.type = unit_type
         self.id = id
@@ -39,10 +40,8 @@ class Unit:
                 for name, value in parameters.items()
             ]
         elif type(parameters) is list:
-            # if given a List, this might come from the client, therefore hold the "originalValue", also "range"
-            value_key = "value" if not params_from_original_values else "originalValue"
             self.parameters = [
-                UnitParam(param['name'], param[value_key], param.get('range'))
+                UnitParam(**param)
                 for param in parameters
             ]
         else:
@@ -81,7 +80,8 @@ class Unit:
 
     def serialize(
             self: Self,
-    ) -> dict:
+            use_templates: Optional[List[UnitTemplate]] = None
+    ) -> Optional[dict]:
         result = {
             'type': self.type,
             'id': self.id,
@@ -89,4 +89,32 @@ class Unit:
         }
         if self.varargs is not None:
             result['varargs'] = self.varargs
+
+        # with the use_templates kwarg you can check for validity
+        if use_templates is not None:
+            template = next(
+                (
+                    template
+                    for template in use_templates
+                    if template.name == self.type
+                ),
+                None
+            )
+            if template is None:
+                return None
+            result['parameters'] = []
+            for expected_param_name in template.all_params:
+                found = next((p for p in self.parameters if p.name == expected_param_name), None)
+                if found:
+                    result['parameters'].append(found)
+
+        # fully serialize
+        result['parameters'] = [
+            {
+                'name': param.name,
+                'value': param.value,
+            }
+            for param in result['parameters']
+        ]
+
         return result

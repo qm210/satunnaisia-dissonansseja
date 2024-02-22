@@ -41,7 +41,7 @@ body.waiting {
 
 @media (min-width: 1400px) {
     body {
-        --width: 80vw;
+        --width: 90vw;
         --height: 80vh;
     }
 }

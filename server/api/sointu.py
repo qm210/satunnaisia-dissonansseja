@@ -28,3 +28,4 @@ def get_all_instruments(instruments_service=Provide[Container.instruments_servic
 def post_instrument_config(instruments_service=Provide[Container.instruments_service]):
     # TODO: allow, for a single .yml, to choose between multiple stored configs
     instruments_service.store_instrument_config(request.get_json())
+    return "", 200
