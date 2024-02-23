@@ -6,15 +6,18 @@ export type WithInit<T> = T & {
     init: (this: Component<T>) => void,
 };
 
+type WatchOptions = { immediate?: boolean };
+
 export type Component<T> = AlpineComponent<T & {
     $store: Store,
-    $watch: <T>(variable: string, callback: (update: T) => void) => void,
+    $watch: <T>(variable: string, callback: (update: T) => void, options?: WatchOptions) => void,
     $router: {
         navigate(path: string): void,
         params: Record<string, string>,
         currentRoute: string,
     },
     $refs: Record<string, HTMLElement | undefined>,
+    $el: HTMLElement,
 }>;
 
 export type Rating = {

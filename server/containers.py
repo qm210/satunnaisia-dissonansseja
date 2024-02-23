@@ -48,8 +48,8 @@ class Container(containers.DeclarativeContainer):
     socketio = providers.Factory(
         SocketIO,
         app=app,
+        cors_allowed_origins=["http://localhost:5173"],
         logger=True,
-        engineio_logger=True,
         message_queue=config.socketio.message_queue
     )
 

@@ -9,16 +9,23 @@ export default defineConfig({
     build: {
         outDir: "../server/public",
         assetsDir: "assets",
-        sourcemap: true,
+        sourcemap: true
     },
     server: {
         host: "localhost",
         port: 5173,
         proxy: {
             "/api": {
-                target: "http://localhost:5000/",
-                changeOrigin: true,
+                target: "http://localhost:5000",
+                changeOrigin: true
             },
-        },
-    },
+            "/socket.io": {
+                // this path is a default for flask-socketIO,
+                // cf. https://flask-socketio.readthedocs.io/en/latest/api.html
+                target: "ws://localhost:5000",
+                changeOrigin: true,
+                ws: true
+            }
+        }
+    }
 });

@@ -22,6 +22,7 @@
         "@alpinejs/persist": "3.13.5",
         "alpinejs": "3.13.5",
         "async-alpine": "1.2.1",
-        "pinecone-router": "4.2.0"
+        "pinecone-router": "4.2.0",
+        "socket.io-client": "4.7.4"
     }
 }
