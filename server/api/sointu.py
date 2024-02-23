@@ -6,13 +6,31 @@ from server.containers import Container
 api = Blueprint('execution', __name__)
 
 
-@api.route('/try-execute')
+@api.route('/test-execute')
 @inject
 def try_calling_sointu_for_debug(sointu_service=Provide[Container.sointu_service]):
-    # run and return log as stream (via generator)
+    """
+    This is the first attempt - run Sointu for a test.wav and return log as stream (via generator)
+    Has to be a GET method for that, I believe.
+
+    We try to improve this later with socketio, see execute-run endpoint (=
+    """
     return Response(
         sointu_service.run_test_execute("test.wav"),
         mimetype='text/plain'
+    )
+
+
+@api.route('/execute-run', methods=['POST'])
+@inject
+def execute_sointu_run(sointu_service=Provide[Container.sointu_service],
+                       instruments_service=Provide[Container.instruments_service]):
+    body = request.get_json()
+    instrument_run = instruments_service.prepare_run(body)
+    sointu_service.initiate_run(instrument_run)
+    return (
+        str(instrument_run.id) if instrument_run.id is not None else "null",
+        200
     )
 
 
@@ -26,6 +44,6 @@ def get_all_instruments(instruments_service=Provide[Container.instruments_servic
 @api.route('/instrument', methods=['POST'])
 @inject
 def post_instrument_config(instruments_service=Provide[Container.instruments_service]):
-    # TODO: allow, for a single .yml, to choose between multiple stored configs
+    # TODO but not now - maybe, allow, for a single .yml, to choose between multiple stored configs
     instruments_service.store_instrument_config(request.get_json())
     return "", 200

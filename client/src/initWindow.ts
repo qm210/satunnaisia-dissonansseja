@@ -1,6 +1,6 @@
 import {
     AudioFileIcon, BanIcon, CrossIcon, DownTrayIcon, HammerIcon, HeartIcon,
-    LameIcon, LeaveIcon, LoadingIcon, PlayIcon, PoopIcon, RandomIcon, SaveIcon,
+    LameIcon, LeaveIcon, LoadingIcon, MagicIcon, PlayIcon, PoopIcon, RandomIcon, SaveIcon,
     ToolsIcon, TrashIcon, UndoIcon
 } from "./components/icons.ts";
 import { Context } from "pinecone-router/dist/types";
@@ -18,11 +18,13 @@ declare global {
         $router?: typeof Proxy,
         defaultRouter: AppRouter,
 
-        // general helpers
+        // request helpers
         fetchJson: <R = any>(url: string | string[]) => Promise<R | null>;
         fetchIntoAudioPlayer: (url: string) => Promise<HTMLAudioElement>;
         postJson: <T extends object | void = void, R = void>(url: string, body?: T) => Promise<R | undefined>;
         deleteWithParams: (url: string, params: Record<string, string>) => Promise<any>;
+
+        // general helpers
         setDebounced: (callback: () => void) => void;
         clientPos: (event: MouseEvent) => Point;
         range: (n: number) => number[],
@@ -160,4 +162,5 @@ const initCustomElements = () => {
     customElements.define("random-icon", RandomIcon);
     customElements.define("hammer-icon", HammerIcon);
     customElements.define("down-tray-icon", DownTrayIcon);
+    customElements.define("magic-icon", MagicIcon);
 };

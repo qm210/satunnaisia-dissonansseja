@@ -13,7 +13,8 @@ export type Component<T> = AlpineComponent<T & {
         navigate(path: string): void,
         params: Record<string, string>,
         currentRoute: string,
-    }
+    },
+    $refs: Record<string, HTMLElement | undefined>,
 }>;
 
 export type Rating = {

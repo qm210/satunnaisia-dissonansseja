@@ -24,7 +24,7 @@ def create_app():
     with app.app_context():
         db.create_all()
 
-    migrate = Migrate(app, db)
+    Migrate(app, db)
 
     app.logger.setLevel(
         logging.DEBUG if app.config['DEBUG'] else logging.INFO
@@ -39,5 +39,13 @@ def create_app():
     @app.route('/')
     def index():
         return send_from_directory(app.static_folder, "index.html")
+
+    socketio = container.socketio()
+    socketio.init_app(app)
+    socket_service = container.socket_service()
+    socketio.on_event('connect', socket_service.on_connect)
+    socketio.on_event('disconnect', socket_service.on_disconnect)
+    socketio.on_event('error', socket_service.on_error)
+    socketio.on_event('message', socket_service.on_message)
 
     return app

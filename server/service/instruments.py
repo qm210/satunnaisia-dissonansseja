@@ -1,6 +1,9 @@
 from pathlib import Path
+from typing import Optional
 
-from server.model.instrument_config import InstrumentConfig, ParamConfigWithTemplate, ParamConfig
+from server.model.instrument_config import InstrumentConfig
+from server.model.instrument_run import InstrumentRun
+from server.model.param_config import ParamConfig, ParamConfigWithTemplate
 from server.sointu.error import InstrumentFormatError
 from server.sointu.instrument import Instrument
 from server.sointu.unit_templates import collect_all_unit_templates
@@ -111,3 +114,7 @@ class InstrumentsService:
     def store_instrument_config(self, json):
         config = InstrumentConfig.from_json(json)
         self.instrument_config_repository.upsert(config)
+
+    def prepare_run(self, json) -> Optional[InstrumentRun]:
+        print("TODO: PREPARE INSTRUMENT RUN", json, "and return it")
+        return InstrumentRun()

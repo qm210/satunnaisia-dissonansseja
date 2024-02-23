@@ -2,7 +2,8 @@ import WavFilesPage from "./wavFiles.ts";
 import CurrentWavPage from "./currentWav.ts";
 import UnsavedRatings from "./unsavedRatings.ts";
 import LoginPage from "./login.ts";
-import ExecuteSointuPage from "./executeSointu.ts";
+import MonitorSointuPage from "./sointuMonitor.ts";
+import ExecuteSointuPage from "./testExecuteSointu.ts";
 import InstrumentsPage from "./instruments.ts";
 import { Point } from "../utils/types";
 
@@ -75,7 +76,12 @@ export default () => `
                 ${LoginPage()}
             </div>
         </template>
-        <template x-route="/execute">
+        <template x-route="/monitor">
+            <div class="contents">
+                ${MonitorSointuPage()}
+            </div>
+        </template>
+        <template x-route="/test-execute">
             <div class="contents">
                 ${ExecuteSointuPage()}
             </div>        
@@ -169,7 +175,7 @@ function NameTag() {
                 </button>
                 <button
                     class="flex gap-4"
-                    @click="$router.navigate('/execute')"
+                    @click="$router.navigate('/test-execute')"
                 >
                     <audiofile-icon></audiofile-icon>
                     <span>

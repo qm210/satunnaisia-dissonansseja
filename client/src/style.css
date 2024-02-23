@@ -98,6 +98,13 @@ button:focus-visible {
     outline: 4px auto -webkit-focus-ring-color;
 }
 
+input:not([type="checkbox"]) {
+    border: 1px solid black;
+    box-shadow: 1px 1px 2px #0004 inset;
+    border-radius: 2px;
+    padding: 0.25rem;
+}
+
 @media (prefers-color-scheme: light) {
     :root {
         color: #213547;
@@ -155,4 +162,20 @@ button:focus-visible {
 
 .ratings-table td:last-of-type {
     padding-right: 0.25rem;
+}
+
+.labeled-input {
+    position: relative;
+}
+
+.labeled-input > label {
+    position: absolute;
+    left: 0;
+    top: -0.5em;
+    font-size: 0.7em;
+    white-space: nowrap;
+}
+
+.labeled-input > input {
+    margin-top: 0.7em;
 }

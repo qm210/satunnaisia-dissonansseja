@@ -2,7 +2,8 @@ from re import sub
 
 from flask.json.provider import DefaultJSONProvider
 
-from server.model.instrument_config import ParamConfig, ParamConfigWithTemplate, InstrumentConfig
+from server.model.instrument_config import InstrumentConfig
+from server.model.param_config import ParamConfig, ParamConfigWithTemplate
 from server.sointu.instrument import Instrument
 from server.sointu.unit import Unit
 from server.sointu.unit_templates import UnitParamFixed, UnitParamFixedSpecial, UnitParamFixedBool, UnitParamTemplate
@@ -41,7 +42,7 @@ class JsonProvider(DefaultJSONProvider):
 
         for key in extended:
             result[key] = extended[key]
-            
+
         # don't really get why Python would just let me override the class definitions, but anyway.
         if isinstance(obj, UnitParamTemplate):
             result['fixed'] = False

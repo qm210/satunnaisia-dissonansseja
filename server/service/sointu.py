@@ -70,3 +70,6 @@ class SointuService:
                 else:
                     print("INTERNAL MESSAGE:", message)
             yield "\n"
+
+    def initiate_run(self, instrument_run):
+        print("TODO: EXECUTE SOINTU RUN WITH", instrument_run.__dict__)

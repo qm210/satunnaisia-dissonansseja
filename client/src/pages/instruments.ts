@@ -267,11 +267,57 @@ const findParamConfig = (instrumentConfig: InstrumentConfig, unit: BaseUnit, par
 };
 
 // f'ing interfacing for the inline Alpine, es ischd eben NICHD lecker
-(window as any).allVariableParametersFor = allVariableParametersFor;
-(window as any).currentlyVariableParametersFor = currentlyVariableParametersFor;
 (window as any).findParamConfig = findParamConfig;
 (window as any).isNotFixedByUser = isNotFixedByUser;
 (window as any).toggleFixedByUser = toggleFixedByUser;
+
+type InstrumentHeaderData = {
+    varyingParams: number,
+    totalVariableParams: number,
+    generateSamples: number,
+    isPosting: boolean,
+
+    startRun: () => void,
+}
+
+Alpine.data("instrumentHeader", (instrument: InstrumentConfig, fixedByUser: FixedByUserRecord): WithInit<InstrumentHeaderData> => ({
+    varyingParams: 0,
+    totalVariableParams: 0,
+    generateSamples: 210,
+    isPosting: false,
+
+    init(this: Component<InstrumentHeaderData>) {
+        this.varyingParams = currentlyVariableParametersFor(instrument, fixedByUser).length;
+        this.totalVariableParams = allVariableParametersFor(instrument).length;
+
+        // removed the checkbox for now
+        const checkbox = this.$refs.variablesCheckbox as HTMLInputElement;
+        if (!checkbox) {
+            return;
+        }
+        checkbox.indeterminate = false;
+        if (this.varyingParams === this.totalVariableParams) {
+            checkbox.checked = true;
+        } else if (this.varyingParams === 0) {
+            checkbox.checked = false;
+        } else {
+            checkbox.indeterminate = true;
+        }
+    },
+
+    startRun(this: Component<InstrumentHeaderData>) {
+        this.isPosting = true;
+        window.postJson("/api/sointu/execute-run", { TODO: true })
+            .then((res) => {
+                alert("RECEIVED: " + JSON.stringify(res));
+                this.$router.navigate("/monitor");
+            })
+            .finally(() => {
+                this.isPosting = false;
+            })
+        ;
+    }
+}));
 
 export default () => `
     <div
@@ -288,46 +334,70 @@ export default () => `
             <template x-for="yml in Object.values(all)" :key="yml.id">
                 <div
                     class="my-4"
-                    x-data="{
-                        varyingParams: 0,
-                        totalVariableParams: 0,
-                        
-                        initCheckbox() {
-                            this.varyingParams = currentlyVariableParametersFor(yml, fixedByUser).length;
-                            this.totalVariableParams = allVariableParametersFor(yml, fixedByUser).length;
-                            
-                            // removed the checkbox for now
-                            if (!$refs.variablesCheckbox) {
-                                return;
-                            }
-                            $refs.variablesCheckbox.indeterminate = false;
-                            if (this.varyingParams === this.totalVariableParams) {
-                                $refs.variablesCheckbox.checked = true;
-                            } else if (this.varyingParams === 0) {
-                                $refs.variablesCheckbox.checked = false;
-                            } else {
-                                $refs.variablesCheckbox.indeterminate = true;
-                            }
-                        }
-                    }"
-                    x-init="initCheckbox()"
+                    x-data="instrumentHeader(yml, fixedByUser)"
                 >
                     <div
-                        class="flex w-full items-center bg-amber-50 p-2 mb-1 border border-black"
+                        class="flex gap-4 w-full items-center bg-amber-50 p-2 mb-1 border border-black"
                     >
-                        <div
-                            class="flex-grow"
-                            @click="console.log(yml)"
-                        >
-                            <span
-                                x-text="yml.baseYmlFilename"
-                                class="text-sm"
-                            ></span>
-                            :&nbsp;
-                            <span
-                                x-text="yml.name"
-                                class="text-xl"
-                            ></span>
+                        <div class="mr-4">
+                            <div class="labeled-input">
+                                <label x-text="yml.baseYmlFilename" class="font-bold">
+                                </label>
+                                <input
+                                    type="text"
+                                    x-model="yml.name"
+                                    :placeholder="yml.name"
+                                    class="font-bold"
+                                />                            
+                            </div>
+                        </div>
+                        <div class="flex-grow flex items-baseline gap-2">
+                            <div class="labeled-input">
+                                <label>
+                                    MIDI Note (C4 = 60):
+                                </label>
+                                <input
+                                    type="text"
+                                    placeholder="number or range 60..128"
+                                />
+                            </div>
+                            <div class="labeled-input">
+                                <label>
+                                    Sample Seconds:
+                                </label>
+                                <input
+                                    x-model="yml.sampleSeconds"
+                                    type="number"
+                                    placeholder="2.10"
+                                    step="0.1"
+                                    min="0.1"
+                                    style="width: 6rem"
+                                />
+                            </div>
+                            <div class="labeled-input">
+                                <label>
+                                    Generate N=...
+                                </label>
+                                <input
+                                    x-model="generateSamples"
+                                    type="number"
+                                    step="1"
+                                    min="1"
+                                    style="width: 6rem"
+                                />
+                                <button
+                                    small
+                                    class="ml-2 hover:bg-pink-500 hover:text-yellow-300"
+                                    @click="startRun"
+                                >
+                                    <div class="flex items-start gap-2">
+                                        <magic-icon></magic-icon>
+                                        <span>
+                                            Do the Thing!
+                                        </span>
+                                    </div>                        
+                                </button>
+                            </div>
                         </div>
                         <div
                             class="flex baseline gap-2 pr-3"
@@ -373,7 +443,7 @@ export default () => `
                     <div
                         class="flex flex-col overflow-x-auto"
                     >
-                        ${instrumentUnits("yml", "initCheckbox")}
+                        ${instrumentUnits("yml", "init")}
                     </div>
                 </div>
             </template>
@@ -381,7 +451,7 @@ export default () => `
     </div>
 `;
 
-const instrumentUnits = (instrVar: string, initCheckboxFunc: string) => `
+const instrumentUnits = (instrVar: string, initFunc: string) => `
     <style>
         td {
             height: 2rem;
@@ -537,7 +607,7 @@ const instrumentUnits = (instrVar: string, initCheckboxFunc: string) => `
                                 :checked="!userFixed"
                                 @change="
                                     toggleFixedByUser(param, ${instrVar}, fixedByUser, !userFixed);
-                                    ${initCheckboxFunc}();
+                                    ${initFunc}();
                                 "
                             />
                         </td>
