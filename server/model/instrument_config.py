@@ -82,7 +82,7 @@ class InstrumentConfig(Base):
             base_yml_hash=body['baseYmlHash'],
             base_instrument=base_instrument.serialize(),
             params_config=params_config,
-            sample_seconds=sample_seconds
+            sample_seconds=sample_seconds,
         )
 
     @staticmethod

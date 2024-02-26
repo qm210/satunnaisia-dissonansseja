@@ -80,15 +80,9 @@ class Unit:
 
     def serialize(
             self: Self,
-            use_templates: Optional[List[UnitTemplate]] = None
+            use_templates: Optional[List[UnitTemplate]] = None,
+            params_as_dict: bool = False
     ) -> Optional[dict]:
-        result = {
-            'type': self.type,
-            'id': self.id,
-            'parameters': self.parameters,
-        }
-        if self.varargs is not None:
-            result['varargs'] = self.varargs
 
         # with the use_templates kwarg you can check for validity
         if use_templates is not None:
@@ -102,19 +96,35 @@ class Unit:
             )
             if template is None:
                 return None
-            result['parameters'] = []
+            params = []
             for expected_param_name in template.all_params:
                 found = next((p for p in self.parameters if p.name == expected_param_name), None)
                 if found:
-                    result['parameters'].append(found)
+                    params.append(found)
+        else:
+            params = self.parameters
 
-        # fully serialize
-        result['parameters'] = [
-            {
-                'name': param.name,
-                'value': param.value,
+        # sointu uses {attack: 3}, but internally, QM prefers {name: attack, value: 3}
+        if params_as_dict:
+            params = {
+                param.name: param.value
+                for param in params
             }
-            for param in result['parameters']
-        ]
+        else:
+            params = [
+                {
+                    'name': param.name,
+                    'value': param.value,
+                }
+                for param in params
+            ]
+
+        result = {
+            'type': self.type,
+            'id': self.id,
+            'parameters': params,
+        }
+        if self.varargs is not None:
+            result['varargs'] = self.varargs
 
         return result

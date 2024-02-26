@@ -1,29 +1,14 @@
 import string
-from dataclasses import dataclass
+from copy import deepcopy
 from pathlib import Path
-from typing import Dict, Generator, Optional
+from typing import Generator, Optional
 
-from yaml import safe_load, dump
+from yaml import safe_load
 
 from server.sointu.instrument import Instrument
 from server.sointu.sointu import Sointu
 from server.sointu.sointu_message import SointuMessage
-
-
-@dataclass
-class TemplatePath:
-    instrument: Path
-    sequence: Path
-    wav_asm: Path
-
-    @classmethod
-    def from_config(cls, config: Dict[string, string], root_path: Path):
-        template_base = root_path / config["folder"]
-        return cls(
-            template_base / config["instrument"],
-            template_base / config["sequence"],
-            template_base / config["asm"]
-        )
+from server.utils.dataclasses import TemplatePath
 
 
 class SointuService:
@@ -31,24 +16,28 @@ class SointuService:
     is the service that calls sointu with the given instrument / sequence settings.
     """
 
-    def __init__(self, config, app_path, downloader):
+    def __init__(self, config, app_path, downloader, process_service, instruments_service):
         self.downloader = downloader
-        self.app_path = Path(app_path)
-        self.template_path = TemplatePath.from_config(config["templates"], self.app_path)
-        # <- should throw an error if config is ill-defined
-        self.wav_path = self.app_path.parent / Path(config["wav"]["folder"])
+        self.process_service = process_service
+        self.instruments_service = instruments_service
 
-    def parse_sequence(self, instrument):
-        sequence = safe_load(self.template_path.sequence.read_text())
-        sequence['patch'] = [instrument.serialize()] + sequence['patch']
+        root_path = Path(app_path).parent
+        self.template_path = TemplatePath.from_config(config["templates"], root_path)
+        self.wav_path = root_path / Path(config["wav"]["folder"])
+
+        self.base_sequence = safe_load(self.template_path.sequence.read_text())
+
+    def create_sequence(self, instrument: Instrument):
+        sequence = deepcopy(self.base_sequence)
+        sequence['patch'] = [instrument.serialize(for_sointu_yml=True)] + sequence['patch']
         return sequence
 
     def run_test_execute(self, filename) -> Generator[string, None, None]:
-        instrument = Instrument.parse_file(self.template_path.instrument)
-        sequence = self.parse_sequence(instrument)
+        instrument = Instrument.parse_file(self.template_path.test_instrument)
+        sequence = self.create_sequence(instrument)
         wav_data: Optional[bytes] = None
         for message in Sointu.write_wav_file(
-                dump(sequence),
+                sequence,
                 self.downloader.dependencies,
                 self.template_path.wav_asm
         ):
@@ -64,12 +53,30 @@ class SointuService:
     def run_some_testing() -> Generator[string, None, None]:
         commands = [["pwd"], ["ls"]]
         for command in commands:
-            for message in Sointu.run_and_yield_output(command):
+            for message in Sointu.run_and_yield(command):
                 if isinstance(message, SointuMessage.Log):
                     yield message.payload
                 else:
                     print("INTERNAL MESSAGE:", message)
             yield "\n"
 
-    def initiate_run(self, instrument_run):
+    def initiate_run(self, run_json):
+        instrument_run = self.instruments_service.prepare_run(run_json)
+
         print("TODO: EXECUTE SOINTU RUN WITH", instrument_run.__dict__)
+        instrument = self.instruments_service.spawn_instrument(instrument_run)
+        sequence = self.create_sequence(instrument)
+
+        # steps:
+        # - write params config to new yaml
+        # - compile run command for the sointu run
+        # - let process_service start a single run - with Popen?
+        # --- first write a stub entry in sointu_run()
+        # --- callback after run: update stub, check if file is there, mark as finished
+        # - send message via socket: "file finished" and "this is ...% of the run "bla"
+        # - also, update instrument run entry (how many files are written, how many left to go?)
+        # - measure CPU performance before and during run, log in DB
+        # - startup routine of server, is there some run to continue?
+        self.process_service.run("lol")
+
+        return instrument_run.id

@@ -5,10 +5,11 @@ from flask_socketio import SocketIO
 from flask_sqlalchemy import SQLAlchemy
 
 from server.model.base import Base
-from server.repositories.instrument_config import InstrumentConfigRepository
+from server.repositories.instrument import InstrumentConfigRepository, InstrumentRunRepository
 from server.repositories.rating import RatingRepository
 from server.repositories.user import UserRepository
 from server.service.instruments import InstrumentsService
+from server.service.process import ProcessService
 from server.service.socket import SocketService
 from server.service.wav_files import WavFilesService
 from server.service.sointu import SointuService
@@ -27,7 +28,7 @@ class Container(containers.DeclarativeContainer):
             },
             "templates": {
                 "folder": "server/templates/",
-                "instrument": "instrument.yml",
+                "test_instrument": "test_instrument.yml",
                 "sequence": "sequence.yml",
                 "asm": "wav.asm"
             },
@@ -80,27 +81,38 @@ class Container(containers.DeclarativeContainer):
         session_factory=db.provided.session
     )
 
+    instrument_run_repository = providers.Factory(
+        InstrumentRunRepository,
+        session_factory=db.provided.session
+    )
+
     wav_files_service = providers.Factory(
         WavFilesService,
         config=config,
         rating_repository=rating_repository
     )
 
-    downloader = providers.Singleton(
-        Downloader
+    process_service = providers.Factory(
+        ProcessService,
     )
 
-    sointu_service = providers.Factory(
-        SointuService,
-        config=config,
-        app_path=app.provided.root_path(),
-        downloader=downloader
+    downloader = providers.Singleton(
+        Downloader
     )
 
     instruments_service = providers.Factory(
         InstrumentsService,
         config=config,
         logger=app.provided.logger,
-        sointu_service=sointu_service,
-        instrument_config_repository=instrument_config_repository
+        instrument_config_repository=instrument_config_repository,
+        instrument_run_repository=instrument_run_repository,
+    )
+
+    sointu_service = providers.Factory(
+        SointuService,
+        config=config,
+        app_path=app.provided.root_path(),
+        downloader=downloader,
+        process_service=process_service,
+        instruments_service=instruments_service
     )

@@ -4,7 +4,7 @@ wav:
   folder: "wav/"
 template:
   folder: "templates/"
-  instrument: "./instrument.yml"  # this file will be written by the instruments service
+  test_instrument: "./test_instrument.yml"  # only for testing / debug stuff
   sequence: "./sequence.yml"  # doesn't change for now
   asm: "./wav.asm"  # doesn't change for now
 instruments:

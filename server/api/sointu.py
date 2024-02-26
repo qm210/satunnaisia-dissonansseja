@@ -2,6 +2,7 @@ from dependency_injector.wiring import Provide, inject
 from flask import Blueprint, Response, jsonify, request
 
 from server.containers import Container
+from server.utils.error import InstrumentConfigNotPersisted
 
 api = Blueprint('execution', __name__)
 
@@ -23,15 +24,16 @@ def try_calling_sointu_for_debug(sointu_service=Provide[Container.sointu_service
 
 @api.route('/execute-run', methods=['POST'])
 @inject
-def execute_sointu_run(sointu_service=Provide[Container.sointu_service],
-                       instruments_service=Provide[Container.instruments_service]):
-    body = request.get_json()
-    instrument_run = instruments_service.prepare_run(body)
-    sointu_service.initiate_run(instrument_run)
-    return (
-        str(instrument_run.id) if instrument_run.id is not None else "null",
-        200
-    )
+def execute_sointu_run(sointu_service=Provide[Container.sointu_service]):
+    run_json = request.get_json()
+    try:
+        instrument_run_id = sointu_service.initiate_run(run_json)
+    except InstrumentConfigNotPersisted:
+        return (
+            "Cannot start run without any persisted instrument config. Save this config (again), and try again",
+            404
+        )
+    return str(instrument_run_id), 200
 
 
 @api.route('/instrument', methods=['GET'])

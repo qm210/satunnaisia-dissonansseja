@@ -1,10 +1,9 @@
 from pathlib import Path
-from typing import Optional
 
 from server.model.instrument_config import InstrumentConfig
 from server.model.instrument_run import InstrumentRun
-from server.model.param_config import ParamConfig, ParamConfigWithTemplate
-from server.sointu.error import InstrumentFormatError
+from server.model.param_config import ParamConfigWithTemplate
+from server.utils.error import InstrumentFormatError, InstrumentConfigNotPersisted
 from server.sointu.instrument import Instrument
 from server.sointu.unit_templates import collect_all_unit_templates
 from server.utils.files import calc_file_hash
@@ -23,11 +22,11 @@ class InstrumentsService:
     TODO: make it possible to store multiple instrument configs to a base YMLs, or to make clones, etc.
     """
 
-    def __init__(self, config, logger, sointu_service, instrument_config_repository):
+    def __init__(self, config, logger, instrument_config_repository, instrument_run_repository):
         self.folder = Path(config["instruments"]["folder"])
         self.logger = logger
-        self.sointu_service = sointu_service
         self.instrument_config_repository = instrument_config_repository
+        self.instrument_run_repository = instrument_run_repository
 
         self._all_unit_templates = collect_all_unit_templates()
 
@@ -113,8 +112,18 @@ class InstrumentsService:
 
     def store_instrument_config(self, json):
         config = InstrumentConfig.from_json(json)
-        self.instrument_config_repository.upsert(config)
+        self.instrument_config_repository.upsert(config, by=json.get('username'))
 
-    def prepare_run(self, json) -> Optional[InstrumentRun]:
-        print("TODO: PREPARE INSTRUMENT RUN", json, "and return it")
-        return InstrumentRun()
+    def prepare_run(self, json) -> InstrumentRun:
+        config = self.instrument_config_repository.get(json['id'])
+        if config is None:
+            raise InstrumentConfigNotPersisted
+        new_run = InstrumentRun.from_json(json)
+        self.instrument_run_repository.insert(new_run)
+        return new_run
+
+    def spawn_instrument(self, run: InstrumentRun) -> Instrument:
+        config = run.instrument_config
+        return Instrument(
+            # TODO
+        )

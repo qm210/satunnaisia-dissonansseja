@@ -4,7 +4,7 @@ from typing import Self, List, Dict, Optional
 from yaml import safe_load
 
 from server.sointu import templates_path
-from server.sointu.error import InstrumentFormatError
+from server.utils.error import InstrumentFormatError
 from server.sointu.unit import Unit
 from server.sointu.unit_templates import UnitTemplate
 
@@ -65,22 +65,23 @@ class Instrument:
 
     def serialize(
             self: Self,
-            use_templates: Optional[List[UnitTemplate]] = None
+            use_templates: Optional[List[UnitTemplate]] = None,
+            for_sointu_yml: bool = False,
     ) -> dict:
         return {
             'name': self.name,
             'numvoices': 1,
-            'units': list(filter(
-                lambda unit: unit is not None,
-                [
-                    serialized_unit
+            'units': [
+                unit
+                for unit in [
+                    unit.serialize(
+                        use_templates=use_templates,
+                        params_as_dict=for_sointu_yml
+                    )
                     for unit in self.units
-                    for serialized_unit in [
-                    unit.serialize(use_templates=use_templates)
                 ]
-                    if serialized_unit is not None
-                ]
-            ))
+                if unit is not None
+            ]
         }
 
 

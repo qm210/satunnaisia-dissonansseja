@@ -1,53 +1,37 @@
 from collections.abc import Generator
-from typing import Dict, Optional
+from typing import Dict, Optional, List, Tuple, Union
 
-from server.sointu import templates_path
-from server.sointu.dependency import (
-    Dependency,
-)
+from server.sointu import templates_path, win_sdk_lib_path
+from server.sointu.dependency import Dependency
 from subprocess import run
 from tempfile import TemporaryDirectory
 from pathlib import Path
-from winreg import (
-    ConnectRegistry,
-    OpenKey,
-    HKEY_LOCAL_MACHINE,
-    HKEYType,
-    QueryValueEx,
-)
 
-from server.sointu.error import SointuCompileError, AssemblerError, LinkerError, WavWriterError
+from server.utils.error import WavWriterError
 from server.sointu.downloader import Downloader
 from server.sointu.instrument import Instrument
 from yaml import safe_load, dump
 
+from server.sointu.sointu_command import SointuCommand
 from server.sointu.sointu_message import SointuMessage
-
-# Wow, I can not begin to comprehend how an unsuitable Moloch like
-# the Windows registry is considered useful by some individuals.
-# I do not want to write or maintain any of the bloated code below.
-registry: HKEYType = ConnectRegistry(None, HKEY_LOCAL_MACHINE)
-windowsSdkKey: HKEYType = OpenKey(registry, r'SOFTWARE\WOW6432Node\Microsoft\Microsoft SDKs\Windows\v10.0')
-windowsSdkProductVersion, _ = QueryValueEx(windowsSdkKey, r'ProductVersion')
-windowsSdkInstallFolder, _ = QueryValueEx(windowsSdkKey, r'InstallationFolder')
-windowsSdkKey.Close()
-registry.Close()
-WindowsSdkLibPath: Path = Path(windowsSdkInstallFolder) / 'Lib' / '{}.0'.format(windowsSdkProductVersion) / 'um' / 'x86'
 
 
 class Sointu:
+
     @staticmethod
-    def run_and_yield_output(*args, print_debug=False, raise_on_error=None, **kwargs) -> Generator[SointuMessage]:
+    def run_and_yield(cmd: Union[SointuCommand, List], print_debug=False) -> Generator[SointuMessage]:
         if print_debug:
-            cmd = args[0] if isinstance(args[0], str) else " ".join(args[0])
             yield SointuMessage.Log(cmd)
 
-        result = run(*args, **kwargs, capture_output=True, text=True)
+        if isinstance(cmd, list):
+            cmd = SointuCommand(cmd)
+
+        result = run(cmd.command, shell=cmd.shell, capture_output=True, text=True)
         for line in result.stdout.splitlines():
             yield SointuMessage.Log(line + '\n')
 
-        if raise_on_error is not None and result.returncode != 0:
-            raise raise_on_error
+        if cmd.raise_on_error and result.returncode != 0:
+            raise cmd.raise_on_error
         yield SointuMessage.RunReturnCode(result.returncode)
 
     @staticmethod
@@ -63,93 +47,89 @@ class Sointu:
                 return None
 
     @staticmethod
-    def write_wav_file(yaml: str, deps: Dict[Dependency, Path], wav_asm_file: Path) -> Generator[SointuMessage]:
-        temp_path = Path(TemporaryDirectory().name)
-        yaml_file: Path = temp_path / 'music.yml'
-        track_asm_file: Path = temp_path / 'music.asm'
-        wav_obj_file: Path = temp_path / 'wav.obj'
-        wav_file: Path = temp_path / 'music.wav'
-        track_obj_file: Path = temp_path / 'music.obj'
-        wav_exe = temp_path / 'wav.exe'
+    def create_commands_for_wav_writing(
+            temp_path: Path,
+            deps: Dict[Dependency, Path],
+            wav_asm_file: Path,
+            suffix: str = ""
+    ) -> Tuple[List[SointuCommand], Path, Path]:
+        def temp_file(filename: str):
+            path = temp_path / filename
+            path = path.with_stem(path.stem + suffix)
+            return path
 
-        # Write yaml file.
-        yaml_file.write_text(yaml)
+        yaml_file = temp_file('music.yml')
+        track_asm_file = temp_file('music.asm')
+        music_inc_file = temp_file('music.inc')
+        wav_obj_file = temp_file('wav.obj')
+        wav_file = temp_file('music.wav')
+        track_obj_file = temp_file('music.obj')
+        wav_exe = temp_file('wav.exe')
 
-        # Compile yaml file using sointu.
-        for message in Sointu.run_and_yield_output(
-                [
-                    deps[Dependency.Sointu],
-                    '-arch', '386',
-                    '-e', 'asm,inc',
-                    '-o', track_asm_file,
-                    yaml_file,
-                ],
-                raise_on_error=SointuCompileError('Could not compile track: {}.'.format(yaml_file))
-        ):
-            if isinstance(message, SointuMessage.Log):
-                yield message
+        commands = [
+            SointuCommand.compile_yml(
+                deps[Dependency.Sointu],
+                track_asm_file,
+                yaml_file
+            ),
+            SointuCommand.assemble_wav_writer(
+                deps[Dependency.Nasm],
+                temp_path,
+                wav_asm_file,
+                music_inc_file,
+                wav_file,
+                wav_obj_file
+            ),
+            SointuCommand.assemble_track(
+                deps[Dependency.Nasm],
+                temp_path,
+                track_asm_file,
+                track_obj_file
+            ),
+            SointuCommand.link_wav_writer(
+                deps[Dependency.Crinkler],
+                temp_path,
+                win_sdk_lib_path,
+                wav_obj_file,
+                track_obj_file,
+                wav_exe
+            ),
+            SointuCommand(
+                [wav_exe],
+                raise_on_error=WavWriterError(f"Unable to write wav {wav_file}")
+            )
+        ]
 
-        # Assemble the wav writer.
-        for message in Sointu.run_and_yield_output(
-                [
-                    deps[Dependency.Nasm],
-                    '-f', 'win32',
-                    '-I', temp_path,
+        return commands, yaml_file, wav_file
+
+    @staticmethod
+    def write_wav_file(
+            sequence: dict,
+            deps: Dict[Dependency, Path],
+            wav_asm_file: Path,
+            suffix: str = ""
+    ) -> Generator[SointuMessage]:
+        with TemporaryDirectory() as tmp_dir:
+            commands, yaml_file, wav_file = (
+                Sointu.create_commands_for_wav_writing(
+                    Path(tmp_dir),
+                    deps,
                     wav_asm_file,
-                    '-DTRACK_INCLUDE="{}"'.format(temp_path / 'music.inc'),
-                    '-DFILENAME="{}"'.format(wav_file),
-                    '-o', wav_obj_file,
-                ],
-                raise_on_error=AssemblerError('Could not assemble track: {}.'.format(wav_asm_file))
-        ):
-            if isinstance(message, SointuMessage.Log):
-                yield message
+                    suffix
+                )
+            )
 
-        # Assemble track.
-        for message in Sointu.run_and_yield_output(
-                [
-                    deps[Dependency.Nasm],
-                    '-f', 'win32',
-                    '-I', temp_path,
-                    track_asm_file,
-                    '-o', track_obj_file,
-                ]
-        ):
-            if isinstance(message, SointuMessage.Log):
-                yield message
+            yaml_file.write_text(dump(sequence))
 
-        # Link wav writer.
-        # Note: When using the list based api, quotes in arguments
-        # are not escaped properly. How annoying can it get?!
-        for message in Sointu.run_and_yield_output(
-                ' '.join(map(str, [
-                    deps[Dependency.Crinkler],
-                    '/LIBPATH:"{}"'.format(temp_path),
-                    '/LIBPATH:"{}"'.format(WindowsSdkLibPath),
-                    wav_obj_file,
-                    track_obj_file,
-                    '/OUT:{}'.format(wav_exe),
-                    'Winmm.lib',
-                    'Kernel32.lib',
-                    'User32.lib',
-                ])),
-                shell=True,
-                raise_on_error=LinkerError('Unable to link {}.'.format(wav_exe))
-        ):
-            if isinstance(message, SointuMessage.Log):
-                yield message
+            for command in commands:
+                for message in Sointu.run_and_yield(command):
+                    if isinstance(message, SointuMessage.Log):
+                        yield message
 
-        # Write wave file
-        for message in Sointu.run_and_yield_output(
-                [
-                    wav_exe,
-                ],
-                raise_on_error=WavWriterError('Unable to write wav {}.'.format(wav_file))
-        ):
-            if isinstance(message, SointuMessage.Log):
-                yield message
+            yield SointuMessage.WavResult(wav_file.read_bytes())
 
-        yield SointuMessage.WavResult(wav_file.read_bytes())
+    # @staticmethod
+    # def write_
 
 
 if __name__ == '__main__':
@@ -163,7 +143,7 @@ if __name__ == '__main__':
 
     result = Sointu.print_logs_until_wav_result(
         Sointu.write_wav_file(
-            dump(sequenceObject),
+            sequenceObject,
             downloader.dependencies,
             templates_path / "wav.asm"
         ))

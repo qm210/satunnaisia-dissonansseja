@@ -16,3 +16,7 @@ class WavWriterError(Exception):
 
 class InstrumentFormatError(Exception):
     pass
+
+
+class InstrumentConfigNotPersisted(Exception):
+    pass

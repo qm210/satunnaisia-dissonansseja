@@ -6,6 +6,7 @@ import {
     WithInit, UnitParameterConfig, InstrumentConfigId
 } from "../types";
 import Alpine from "alpinejs";
+import { getUserName } from "../initStores.ts";
 
 const INSTRUMENTS_ENDPOINT = "/api/sointu/instrument";
 
@@ -189,7 +190,8 @@ Alpine.data("instruments", (): WithInit<InstrumentData> => ({
     },
 
     submit: function(this: Component<InstrumentData>, file: InstrumentConfig) {
-        window.postJson(INSTRUMENTS_ENDPOINT, file)
+        const body = { ...file, username: getUserName() };
+        window.postJson(INSTRUMENTS_ENDPOINT, body)
             .then(console.log);
     },
 
@@ -307,15 +309,18 @@ Alpine.data("instrumentHeader", (instrument: InstrumentConfig, fixedByUser: Fixe
 
     startRun(this: Component<InstrumentHeaderData>) {
         this.isPosting = true;
-        window.postJson("/api/sointu/execute-run", { TODO: true })
+        window.postJson("/api/sointu/execute-run", {
+            ...instrument,
+            sampleSize: this.generateSamples,
+            username: getUserName()
+        })
             .then((res) => {
                 alert("RECEIVED: " + JSON.stringify(res));
                 this.$router.navigate("/monitor");
             })
             .finally(() => {
                 this.isPosting = false;
-            })
-        ;
+            });
     }
 }));
 
