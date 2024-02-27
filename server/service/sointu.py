@@ -63,10 +63,10 @@ class SointuService:
     def initiate_run(self, run_json):
         instrument_run = self.instruments_service.prepare_run(run_json)
 
-        print("TODO: EXECUTE SOINTU RUN WITH", instrument_run.__dict__)
         instrument = self.instruments_service.spawn_instrument(instrument_run)
         sequence = self.create_sequence(instrument)
 
+        print("TODO: EXECUTE SOINTU RUN WITH", instrument_run.__dict__, sequence)
         # steps:
         # - write params config to new yaml
         # - compile run command for the sointu run

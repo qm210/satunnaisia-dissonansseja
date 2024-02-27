@@ -1,4 +1,5 @@
 from pathlib import Path
+from random import randint
 
 from server.model.instrument_config import InstrumentConfig
 from server.model.instrument_run import InstrumentRun
@@ -122,8 +123,23 @@ class InstrumentsService:
         self.instrument_run_repository.insert(new_run)
         return new_run
 
-    def spawn_instrument(self, run: InstrumentRun) -> Instrument:
-        config = run.instrument_config
-        return Instrument(
-            # TODO
-        )
+    @staticmethod
+    def spawn_instrument(run: InstrumentRun) -> Instrument:
+        instrument = Instrument.from_dict(run.instrument_config.base_instrument)
+        for pc in run.params_config:
+            unit = next((
+                unit
+                for unit in instrument.units
+                if unit.id == pc['unitId']
+            ))
+            param = next((
+                param
+                for param in unit.parameters
+                if param.name == pc['paramName']
+            ))
+            if pc['range'] is not None:
+                # TODO: skew the random value towards pc['value'], with random.triangular() or something
+                param.value = randint(*pc['range'])
+            else:
+                param.value = pc['value']
+        return instrument
