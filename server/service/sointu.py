@@ -1,7 +1,9 @@
+import atexit
 import string
 from copy import deepcopy
 from pathlib import Path
 from random import randint
+from tempfile import TemporaryDirectory
 from typing import Generator, Optional
 
 from yaml import safe_load
@@ -22,18 +24,19 @@ class SointuService:
     def __init__(
             self,
             config,
-            app_path,
+            app,
             downloader,
             process_service,
             instruments_service,
-            sointu_run_repository
+            sointu_run_repository,
     ):
+        self.app = app
         self.downloader = downloader
         self.process_service = process_service
         self.instruments_service = instruments_service
         self.sointu_run_repository = sointu_run_repository
 
-        root_path = Path(app_path).parent
+        root_path = Path(app.root_path).parent
         self.template_path = TemplatePath.from_config(config["templates"], root_path)
         self.wav_path = root_path / Path(config["wav"]["folder"])
 
@@ -86,7 +89,10 @@ class SointuService:
             note = self.draw_random_note(instrument_run)
             sequence = self.create_sequence(instrument, note=note)
             self.initiate_sointu_run(sequence, instrument_run, sample)
-            break  # for now
+
+            # TODO REMOVE THIS
+            if sample > 3:
+                break  # for now
 
         return instrument_run.id
 

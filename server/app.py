@@ -1,5 +1,7 @@
+import atexit
 import logging
 from pathlib import Path
+from tempfile import TemporaryDirectory
 
 from flask import send_from_directory
 from flask_migrate import Migrate
@@ -47,5 +49,17 @@ def create_app():
     socketio.on_event('disconnect', socket_service.on_disconnect)
     socketio.on_event('error', socket_service.on_error)
     socketio.on_event('message', socket_service.on_message)
+
+    app.temp_dir = TemporaryDirectory()
+    # <-- TODO: need to put that into an @app.before_first_request?
+    print("INIT", app.temp_dir)
+
+    def on_exit(exception=None):
+        print("TEARDOWN", app.temp_dir)
+        if app.temp_dir is not None:
+            app.temp_dir.cleanup()
+            # TODO: check that these really get cleaned up and are not spamming unto my hard drive
+
+    atexit.register(on_exit)
 
     return app

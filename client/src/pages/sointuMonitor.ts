@@ -11,6 +11,7 @@ type Log = {
 
 type SointuMonitorData = {
     log: Log[],
+    runId: number | undefined,
     socket: {
         socket: Socket | null,
         connected: boolean,
@@ -25,6 +26,7 @@ type SointuMonitorData = {
 
 Alpine.data("monitorSointu", (): WithInit<SointuMonitorData> => ({
     log: [],
+    runId: undefined,
     sointu: {
         isRunning: undefined,
         lastFileWritten: ""
@@ -35,6 +37,13 @@ Alpine.data("monitorSointu", (): WithInit<SointuMonitorData> => ({
     },
 
     init(this: Component<SointuMonitorData>) {
+        this.runId = +this.$router.params.runId;
+        if (!this.runId) {
+            alert("this route needs a valid numeric /:runId parameter!");
+            this.$router.navigate("/");
+            return;
+        }
+
         this.socket.socket = io();
         this.socket.socket.on("connect", () => {
             this.socket.connected = true;

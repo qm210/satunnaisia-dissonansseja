@@ -76,7 +76,7 @@ export default () => `
                 ${LoginPage()}
             </div>
         </template>
-        <template x-route="/monitor">
+        <template x-route="/instrument-run/:runId">
             <div class="contents">
                 ${MonitorSointuPage()}
             </div>

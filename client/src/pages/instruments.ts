@@ -314,9 +314,8 @@ Alpine.data("instrumentHeader", (instrument: InstrumentConfig, fixedByUser: Fixe
             sampleSize: this.generateSamples,
             username: getUserName()
         })
-            .then((res) => {
-                alert("RECEIVED: " + JSON.stringify(res));
-                this.$router.navigate("/monitor");
+            .then((runId) => {
+                this.$router.navigate(`/instrument-run/${runId}`);
             })
             .finally(() => {
                 this.isPosting = false;

@@ -119,7 +119,7 @@ class Container(containers.DeclarativeContainer):
     sointu_service = providers.Factory(
         SointuService,
         config=config,
-        app_path=app.provided.root_path(),
+        app=app.provided,
         downloader=downloader,
         process_service=process_service,
         instruments_service=instruments_service,
