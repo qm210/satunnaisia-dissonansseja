@@ -4,23 +4,9 @@ from typing import Union
 from server.model.sointu_run import SointuRun, WavStatus
 
 
-class SessionFactoryManager:
-    def __init__(self, app, **kwargs):
-        self.app = app
-
-    def __enter__(self, use_factory: bool = True):
-        pass
-
-    def __exit__(self):
-        pass
-
-
 class SointuRunRepository:
-    def __init__(self, session_factory, app, db):
+    def __init__(self, session_factory):
         self.session_factory = session_factory
-        self.app = app
-        self.session_manager = lambda kwargs: SessionFactoryManager(app, **kwargs)
-        self.db = db
 
     def insert(self, entity: SointuRun) -> int:
         with self.session_factory() as session:

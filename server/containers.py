@@ -90,8 +90,6 @@ class Container(containers.DeclarativeContainer):
     sointu_run_repository = providers.Factory(
         SointuRunRepository,
         session_factory=db.provided.session,
-        app=app.provided,
-        db=db.provided,
     )
 
     wav_files_service = providers.Factory(
