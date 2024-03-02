@@ -16,29 +16,31 @@ class ProcessService:
         self.app = app
         self.socketio = socketio
 
-    @staticmethod
-    def check_resources(label: str = ""):
-        print(label, "- CORES", os.cpu_count(), "MEMORY", psutil.virtual_memory())
-        return "TODO"
+    def check_resources(self, label: str = ""):
+        self.app.logger.info(label, "- CORES", os.cpu_count(), "MEMORY", psutil.virtual_memory())
 
     def actual_run(self, command, callback, callback_args):
-        print("We do important work!", command)
+        self.app.logger.info("We do important work!", command)
         process = subprocess.Popen(
             ['timeout', '/t', '10', '/nobreak'],
             shell=True,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
+            # these won't work with shell=True, it seems:
+            # stdout=subprocess.PIPE,
+            # stderr=subprocess.PIPE,
         )
         Timer(2, self.check_resources).start()
         process.wait()
         with self.app.app_context():
             callback(*callback_args)
         stdout, stderr = process.communicate()
-        print("Now finished - Oh Kinder, wie die Zeit vergeht..", stdout, stderr)
+        if stdout is not None:
+            self.app.logger.info(stdout)
+        if stderr is not None:
+            self.app.logger.warn(stderr)
         self.check_resources("End")
 
     def run(self, command, callback: Optional[Callable] = None, callback_args: Optional[Tuple] = None) -> Process:
-        ProcessService.check_resources("Start")
+        self.check_resources("Start")
         task = self.socketio.start_background_task(self.actual_run, command, callback, callback_args)
         # we do not join() on purpose, this is fire and forget! (... until the callback calls back.)
         return task
