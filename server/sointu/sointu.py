@@ -127,16 +127,11 @@ class Sointu:
                         yield message
 
             yield SointuMessage.WavResult(wav_file.read_bytes())
-
-    # @staticmethod
-    # def write_
-
+            
 
 if __name__ == '__main__':
     downloader = Downloader()
-
     instrument: Instrument = Instrument.parse_file(templates_path / 'instrument.yml')
-
     sequenceObject = safe_load((templates_path / 'sequence.yml').read_text())
     sequenceObject['patch'] = [instrument.serialize()] + sequenceObject['patch']
     print(dump(sequenceObject, indent=2))
@@ -151,11 +146,3 @@ if __name__ == '__main__':
         print("No Wav Result returned.")
     else:
         (templates_path / 'test.wav').write_bytes(result)
-
-    # print(instrument.randomize())
-    # print(
-    #     Sointu.yamlToWave(
-    #         Path(files(templates) / '21.yml').read_text(),
-    #         downloader.dependencies
-    #     )
-    # )

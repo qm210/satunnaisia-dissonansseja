@@ -38,14 +38,23 @@ class InstrumentRun(Base):
 
     @classmethod
     def from_json(cls, json, status=None):
-        return cls(
+        result = cls(
             status=status,
             instrument_config_id=json['id'],
             params_config=json['paramsConfig'],
-            note_lower=json.get('noteLower', cls._DEFAULT_MIDI_NOTE),
-            note_upper=json.get('noteUpper', cls._DEFAULT_MIDI_NOTE),
-            sample_seconds=json.get('sampleSeconds', cls._DEFAULT_SAMPLE_SECONDS),
-            sample_size=json.get('sampleSize', cls._DEFAULT_SAMPLE_SIZE),
+            note_lower=json.get('noteLower'),
+            note_upper=json.get('noteUpper'),
+            sample_seconds=json.get('sampleSeconds'),
+            sample_size=json.get('sampleSize'),
             comment=json['comment'],
             created_by=json.get('username')
         )
+        if result.note_lower is None:
+            result.note_lower = cls._DEFAULT_MIDI_NOTE
+        if result.note_upper is None:
+            result.note_upper = result.note_lower
+        if result.sample_seconds is None:
+            result.sample_seconds = cls._DEFAULT_SAMPLE_SECONDS
+        if result.sample_size is None:
+            result.sample_size = cls._DEFAULT_SAMPLE_SIZE
+        return result

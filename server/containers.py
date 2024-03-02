@@ -7,6 +7,7 @@ from flask_sqlalchemy import SQLAlchemy
 from server.model.base import Base
 from server.repositories.instrument import InstrumentConfigRepository, InstrumentRunRepository
 from server.repositories.rating import RatingRepository
+from server.repositories.sointu_run import SointuRunRepository
 from server.repositories.user import UserRepository
 from server.service.instruments import InstrumentsService
 from server.service.process import ProcessService
@@ -86,6 +87,13 @@ class Container(containers.DeclarativeContainer):
         session_factory=db.provided.session
     )
 
+    sointu_run_repository = providers.Factory(
+        SointuRunRepository,
+        session_factory=db.provided.session,
+        app=app.provided,
+        db=db.provided,
+    )
+
     wav_files_service = providers.Factory(
         WavFilesService,
         config=config,
@@ -94,6 +102,8 @@ class Container(containers.DeclarativeContainer):
 
     process_service = providers.Factory(
         ProcessService,
+        app=app,
+        socketio=socketio
     )
 
     downloader = providers.Singleton(
@@ -114,5 +124,6 @@ class Container(containers.DeclarativeContainer):
         app_path=app.provided.root_path(),
         downloader=downloader,
         process_service=process_service,
-        instruments_service=instruments_service
+        instruments_service=instruments_service,
+        sointu_run_repository=sointu_run_repository,
     )

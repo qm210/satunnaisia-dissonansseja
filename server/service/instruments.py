@@ -8,6 +8,7 @@ from server.utils.error import InstrumentFormatError, InstrumentConfigNotPersist
 from server.sointu.instrument import Instrument
 from server.sointu.unit_templates import collect_all_unit_templates
 from server.utils.files import calc_file_hash
+from server.utils.math import mixed_random_between_uniform_and_triangular
 
 
 class InstrumentsService:
@@ -137,9 +138,13 @@ class InstrumentsService:
                 for param in unit.parameters
                 if param.name == pc['paramName']
             ))
-            if pc['range'] is not None:
-                # TODO: skew the random value towards pc['value'], with random.triangular() or something
-                param.value = randint(*pc['range'])
-            else:
-                param.value = pc['value']
+            param.range = pc.get('range')
+            param.value = InstrumentsService.pick_random_value(param.range, pc['value'])
         return instrument
+
+    @staticmethod
+    def pick_random_value(range, pivot):
+        if range is None:
+            return pivot
+        else:
+            return mixed_random_between_uniform_and_triangular(*range, pivot)
