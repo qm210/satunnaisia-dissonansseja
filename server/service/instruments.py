@@ -119,7 +119,9 @@ class InstrumentsService:
     def prepare_run(self, json) -> InstrumentRun:
         config = self.instrument_config_repository.get(json['id'])
         if config is None:
-            raise InstrumentConfigNotPersisted
+            raise InstrumentConfigNotPersisted(
+                "Cannot start run without any persisted instrument config. Save this config (again), and try again"
+            )
         new_run = InstrumentRun.from_json(json)
         self.instrument_run_repository.insert(new_run)
         return new_run

@@ -28,12 +28,11 @@ def execute_sointu_run(sointu_service=Provide[Container.sointu_service]):
     run_json = request.get_json()
     try:
         instrument_run_id = sointu_service.initiate_run(run_json)
-    except InstrumentConfigNotPersisted:
-        return (
-            "Cannot start run without any persisted instrument config. Save this config (again), and try again",
-            404
-        )
-    return str(instrument_run_id), 200
+        return str(instrument_run_id), 200
+    except InstrumentConfigNotPersisted as exc:
+        return str(exc), 404
+    except Exception as exc:
+        return f"Unhandled: {exc}", 500
 
 
 @api.route('/instrument', methods=['GET'])

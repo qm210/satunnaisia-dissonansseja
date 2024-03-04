@@ -23,9 +23,11 @@ class SointuRunRepository:
         )
         return self.insert(sointu_run)
 
-    def update_written(self, id: int, is_written: bool = True):
+    def update_written(self, id: int, is_written: bool = True, wav_filename: str = ""):
         with self.session_factory() as session:
             entity = session.query(SointuRun).get(id)
             entity.wav_written = is_written
             entity.wav_status = WavStatus.Unchecked.value
+            if wav_filename:
+                entity.wav_file = wav_filename
             session.commit()

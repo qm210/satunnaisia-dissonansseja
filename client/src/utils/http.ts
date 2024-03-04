@@ -10,8 +10,9 @@ export const checkOk = async (promise: Promise<Response>) => {
 export class StatusError extends Error {
     public status: number | undefined;
 
-    constructor({ statusText, status }: { statusText?: string, status?: number }) {
-        super(statusText);
+    constructor({ statusText, status }: { statusText?: string, status?: number }, message?: string) {
+        const wholeMessage = message ? `${statusText}: ${message}` : statusText;
+        super(wholeMessage);
         this.status = status;
     }
 }
@@ -29,7 +30,8 @@ const unwrapContent = async <R = unknown>(response: Response): Promise<R> => {
 export const fetchResponse: typeof fetch = async (...args) => {
     const response = await fetch(...args);
     if (!response.ok) {
-        throw new StatusError(response);
+        const message = await response.text();
+        throw new StatusError(response, message);
     }
     return response;
 };

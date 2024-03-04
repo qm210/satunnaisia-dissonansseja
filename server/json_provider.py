@@ -2,12 +2,6 @@ from re import sub
 
 from flask.json.provider import DefaultJSONProvider
 
-from server.model.instrument_config import InstrumentConfig
-from server.model.param_config import ParamConfig, ParamConfigWithTemplate
-from server.sointu.instrument import Instrument
-from server.sointu.unit import Unit
-from server.sointu.unit_templates import UnitParamFixed, UnitParamFixedSpecial, UnitParamFixedBool, UnitParamTemplate
-
 
 def with_dict_in_camel_case(obj):
     if isinstance(obj, list):
@@ -25,6 +19,11 @@ def with_dict_in_camel_case(obj):
 class JsonProvider(DefaultJSONProvider):
     @staticmethod
     def default(obj):
+        from server.model.param_config import ParamConfigWithTemplate
+        from server.sointu.unit_templates import (
+            UnitParamFixed, UnitParamFixedSpecial, UnitParamFixedBool, UnitParamTemplate
+        )
+
         result = None
 
         if hasattr(obj, 'serialize'):

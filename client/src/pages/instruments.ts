@@ -317,6 +317,9 @@ Alpine.data("instrumentHeader", (instrument: InstrumentConfig, fixedByUser: Fixe
             .then((runId) => {
                 this.$router.navigate(`/instrument-run/${runId}`);
             })
+            .catch(err => {
+                console.error(err.name, err.status, err.message);
+            })
             .finally(() => {
                 this.isPosting = false;
             });

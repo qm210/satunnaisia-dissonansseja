@@ -1,15 +1,12 @@
-import atexit
 import string
 from copy import deepcopy
 from pathlib import Path
 from random import randint
-from tempfile import TemporaryDirectory
 from typing import Generator, Optional
 
 from yaml import safe_load
 
 from server.model.instrument_run import InstrumentRun
-from server.model.sointu_run import SointuRun
 from server.sointu.instrument import Instrument
 from server.sointu.sointu import Sointu
 from server.sointu.sointu_message import SointuMessage
@@ -31,6 +28,7 @@ class SointuService:
             sointu_run_repository,
     ):
         self.app = app
+        self.logger = app.logger
         self.downloader = downloader
         self.process_service = process_service
         self.instruments_service = instruments_service
@@ -69,47 +67,57 @@ class SointuService:
         (self.wav_path / filename).write_bytes(wav_data)
         # return something? -> third type in Generator[..., ..., None]
 
-    # that one is probably not needed anymore. thanks but bye!
-    @staticmethod
-    def run_some_testing() -> Generator[string, None, None]:
-        commands = [["pwd"], ["ls"]]
-        for command in commands:
-            for message in Sointu.run_and_yield(command):
-                if isinstance(message, SointuMessage.Log):
-                    yield message.payload
-                else:
-                    print("INTERNAL MESSAGE:", message)
-            yield "\n"
-
     def initiate_run(self, run_json):
         instrument_run = self.instruments_service.prepare_run(run_json)
         instrument = self.instruments_service.spawn_instrument(instrument_run)
 
         for sample in range(instrument_run.sample_size):
+            self.logger.debug(f"Initiate Run {sample}")
             note = self.draw_random_note(instrument_run)
             sequence = self.create_sequence(instrument, note=note)
+
             self.initiate_sointu_run(sequence, instrument_run, sample)
 
             # TODO REMOVE THIS
-            if sample > 3:
-                break  # for now
+            self.logger.info("Canceled run after first sample because this is the development limit for now")
+            break  # for now
 
         return instrument_run.id
 
-    def finalize_sointu_run(self, wav_file: Path, run_id: int):
+    def finalize_sointu_run(self, temp_wav_file: Path, wav_file: Path, run_id: int):
+        self.logger.debug("finalize sointu run")
+
         is_written = wav_file.exists()
         print("TODO: now need to check the status etc. and emit some websocket messages")
-        self.sointu_run_repository.update_written(run_id, is_written)
+        if is_written:
+            wav_folder = wav_file.parent
+            wav_folder.mkdir(parents=True, exist_ok=True)
+            temp_wav_file.rename(wav_file)
+        self.sointu_run_repository.update_written(run_id, is_written, temp_wav_file)
 
     def initiate_sointu_run(self, sequence: dict, instrument_run: InstrumentRun, sample_index: int) -> None:
         sample_size = str(instrument_run.sample_size)
         padded_index = str(sample_index).zfill(len(sample_size))
-        wav_file = Path(f"run{instrument_run.id}-{sample_size}-{padded_index}.wav")
-        run_id = self.sointu_run_repository.insert_new(wav_file, instrument_run.id)
+        sample_id = f"run{instrument_run.id}-{padded_index}"
 
-        print("TODO: EXECUTE SOINTU RUN FOR", wav_file, sequence)
-        # TODO: put the real commands with that sequence here
-        self.process_service.run("lolololo", callback=self.finalize_sointu_run, callback_args=(wav_file, run_id))
+        self.logger.debug(f"prepare wav writing - for {sample_id}")
+        commands, temp_wav_file = Sointu.prepare_wav_writing(
+            sequence,
+            self.app.temp_path,
+            self.downloader.dependencies,
+            self.template_path.wav_asm,
+            "-" + sample_id,
+        )
+
+        run_id = self.sointu_run_repository.insert_new(temp_wav_file, instrument_run.id)
+        final_wav_file = Path(f"{sample_id}-{sample_size}.wav")
+
+        self.logger.debug("write waves inside %s", self.app.temp_path)
+        self.process_service.run(
+            commands,
+            callback=self.finalize_sointu_run,
+            callback_args=(temp_wav_file, final_wav_file, run_id)
+        )
 
         # steps are planned as:
         # - write params config to new yaml

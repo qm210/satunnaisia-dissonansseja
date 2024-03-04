@@ -22,3 +22,11 @@ def mixed_random_between_uniform_and_triangular(lower_bound, upper_bound, pivot)
         triangular = 0
         mix = 1
     return mix * uniform + (1 - mix) * triangular
+
+
+def human_readable_bytes(num, suffix="B"):
+    for unit in ("", "Ki", "Mi", "Gi", "Ti", "Pi", "Ei", "Zi"):
+        if abs(num) < 1024:
+            return f"{num:3.1f}{unit}{suffix}"
+        num /= 1024.0
+    return f"{num:.1f}Yi{suffix}"

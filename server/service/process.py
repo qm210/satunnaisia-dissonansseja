@@ -5,7 +5,10 @@ from time import sleep
 import psutil
 from threading import Timer
 from multiprocessing import Process
-from typing import Optional, Callable, Tuple
+from typing import Optional, Callable, Tuple, Iterable, List
+
+from server.sointu.sointu_command import SointuCommand
+from server.utils.math import human_readable_bytes
 
 
 class ProcessService:
@@ -14,38 +17,50 @@ class ProcessService:
     into its own service. Maybe this makes sense, maybe it can be merged somewhere, we'll see.
     """
 
-    def __init__(self, app, socketio):
+    def __init__(self, app):
         self.app = app
-        self.socketio = socketio
+        self.socketio = app.config['SOCKETIO']
 
     def check_resources(self, label: str = ""):
-        self.app.logger.info(f"{label} - CORES {os.cpu_count()} - MEMORY {psutil.virtual_memory()}")
+        memory = psutil.virtual_memory()
+        free_memory = human_readable_bytes(memory.free)
+        self.app.logger.info(f"{label} - MEMORY FREE {free_memory}, USED {memory.percent}% ({os.cpu_count()} cores)")
 
-    def actual_run(self, command, callback, callback_args):
-        self.app.logger.info("We do important work: " + command)
-        process = subprocess.Popen(
-            ['timeout', '/t', '10', '/nobreak'],
-            shell=True,
-            # these won't work with shell=True, it seems:
-            # stdout=subprocess.PIPE,
-            # stderr=subprocess.PIPE,
-        )
-        Timer(2, self.check_resources).start()
-        process.wait()
-        sleep(5)  # simulate some processing time TODO REMOVE THIS, OBVIOUSLY
+    def actual_run(self, commands: List[SointuCommand], callback, callback_args):
+        for index, command in enumerate(commands):
+            self.app.logger.info(
+                f"Run Step {index + 1}/{len(commands)}: {command} {'(shell)' if command.shell else ''}"
+            )
+            process = subprocess.Popen(
+                command.command,
+                shell=command.shell,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+            )
+            returncode = process.wait()
+            stdout, stderr = process.communicate()
+            if stdout != b'':
+                self.app.logger.info(stdout.decode())
+            if stderr != b'':
+                self.app.logger.warn(stderr.decode())
+            if returncode != 0 and command.raise_on_error:
+                self.app.logger.error(f"Returned {returncode} from command '{command}'")
+                raise command.raise_on_error
+
         with self.app.app_context():
             callback(*callback_args)
-        stdout, stderr = process.communicate()
-        if stdout is not None:
-            self.app.logger.info(stdout.decode())
-        if stderr is not None:
-            self.app.logger.warn(stderr)
-        self.check_resources("End")
+        self.check_resources("End")  # todo: just temporary
 
-    def run(self, command, callback: Optional[Callable] = None, callback_args: Optional[Tuple] = None) -> Process:
-        self.check_resources("Start")
-        task = self.socketio.start_background_task(self.actual_run, command, callback, callback_args)
-        # we do not join() on purpose, this is fire and forget! (... until the callback calls back.)
+    def run(self, commands, callback: Optional[Callable] = None, callback_args: Optional[Tuple] = None) -> Process:
+        self.check_resources("Start")  # todo: just temporary
+        task = self.socketio.start_background_task(
+            self.actual_run,
+            commands,
+            callback,
+            callback_args
+        )
+        # we do not join() on purpose, this is fire and forget
+        # ... until the callback calls back.
         return task
 
 # TODO:

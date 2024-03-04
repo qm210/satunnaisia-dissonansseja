@@ -103,6 +103,26 @@ class Sointu:
         return commands, yaml_file, wav_file
 
     @staticmethod
+    def prepare_wav_writing(
+            sequence: dict,
+            temp_path: Path,
+            deps: Dict[Dependency, Path],
+            wav_asm_file: Path,
+            suffix: str = ""
+
+    ) -> Tuple[List[SointuCommand], Path]:
+        commands, yaml_file, wav_file = (
+            Sointu.create_commands_for_wav_writing(
+                temp_path,
+                deps,
+                wav_asm_file,
+                suffix
+            )
+        )
+        yaml_file.write_text(dump(sequence))
+        return commands, wav_file
+
+    @staticmethod
     def write_wav_file(
             sequence: dict,
             deps: Dict[Dependency, Path],
@@ -110,24 +130,20 @@ class Sointu:
             suffix: str = ""
     ) -> Generator[SointuMessage]:
         with TemporaryDirectory() as tmp_dir:
-            commands, yaml_file, wav_file = (
-                Sointu.create_commands_for_wav_writing(
-                    Path(tmp_dir),
-                    deps,
-                    wav_asm_file,
-                    suffix
-                )
+            commands, wav_file = Sointu.prepare_wav_writing(
+                sequence,
+                Path(tmp_dir),
+                deps,
+                wav_asm_file,
+                suffix
             )
-
-            yaml_file.write_text(dump(sequence))
-
             for command in commands:
                 for message in Sointu.run_and_yield(command):
                     if isinstance(message, SointuMessage.Log):
                         yield message
 
             yield SointuMessage.WavResult(wav_file.read_bytes())
-            
+
 
 if __name__ == '__main__':
     downloader = Downloader()

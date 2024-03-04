@@ -44,13 +44,15 @@ Alpine.data("monitorSointu", (): WithInit<SointuMonitorData> => ({
             return;
         }
 
-        this.socket.socket = io();
+        const query = { instrumentRunId: this.runId };
+        this.socket.socket = io({ query });
+
         this.socket.socket.on("connect", () => {
             this.socket.connected = true;
         });
         this.socket.socket.on("disconnect", (reason) => {
-            if (reason !== "io client disconnect") {
-                console.warn("Unexpected Socket Disco...nnect:", reason);
+            if (!["io client disconnect", "transport error"].includes(reason)) {
+                console.warn("Unexpected Socket Disco (nnect):", reason);
             }
             this.socket.connected = false;
         });

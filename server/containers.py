@@ -1,7 +1,6 @@
 from dependency_injector import containers, providers
 from dependency_injector.ext import flask
 from flask import Flask
-from flask_socketio import SocketIO
 from flask_sqlalchemy import SQLAlchemy
 
 from server.model.base import Base
@@ -47,17 +46,9 @@ class Container(containers.DeclarativeContainer):
         instance_relative_config=True,
     )
 
-    socketio = providers.Factory(
-        SocketIO,
-        app=app,
-        cors_allowed_origins=["http://localhost:5173"],
-        logger=True,
-        message_queue=config.socketio.message_queue
-    )
-
     socket_service = providers.Factory(
         SocketService,
-        socketio=socketio,
+        socketio=app.provided.config['SOCKETIO'],
         logger=app.provided.logger,
     )
 
@@ -101,7 +92,6 @@ class Container(containers.DeclarativeContainer):
     process_service = providers.Factory(
         ProcessService,
         app=app,
-        socketio=socketio
     )
 
     downloader = providers.Singleton(
