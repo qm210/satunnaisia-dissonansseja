@@ -85,15 +85,15 @@ class SointuService:
         return instrument_run.id
 
     def finalize_sointu_run(self, temp_wav_file: Path, wav_file: Path, run_id: int):
-        self.logger.debug("finalize sointu run")
+        self.logger.debug(f"finalize sointu run, {temp_wav_file} -> {wav_file}")
 
-        is_written = wav_file.exists()
-        print("TODO: now need to check the status etc. and emit some websocket messages")
+        is_written = temp_wav_file.exists()
+        self.logger.debug(f"file written? {is_written}")
         if is_written:
             wav_folder = wav_file.parent
             wav_folder.mkdir(parents=True, exist_ok=True)
             temp_wav_file.rename(wav_file)
-        self.sointu_run_repository.update_written(run_id, is_written, temp_wav_file)
+        self.sointu_run_repository.update_written(run_id, is_written, wav_file)
 
     def initiate_sointu_run(self, sequence: dict, instrument_run: InstrumentRun, sample_index: int) -> None:
         sample_size = str(instrument_run.sample_size)
@@ -110,7 +110,7 @@ class SointuService:
         )
 
         run_id = self.sointu_run_repository.insert_new(temp_wav_file, instrument_run.id)
-        final_wav_file = Path(f"{sample_id}-{sample_size}.wav")
+        final_wav_file = self.wav_path / f"{sample_id}-{sample_size}.wav"
 
         self.logger.debug("write waves inside %s", self.app.temp_path)
         self.process_service.run(

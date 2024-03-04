@@ -1,11 +1,9 @@
 import os
 import subprocess
-from time import sleep
 
 import psutil
-from threading import Timer
 from multiprocessing import Process
-from typing import Optional, Callable, Tuple, Iterable, List
+from typing import Optional, Callable, Tuple, List
 
 from server.sointu.sointu_command import SointuCommand
 from server.utils.math import human_readable_bytes
@@ -29,19 +27,24 @@ class ProcessService:
     def actual_run(self, commands: List[SointuCommand], callback, callback_args):
         for index, command in enumerate(commands):
             self.app.logger.info(
-                f"Run Step {index + 1}/{len(commands)}: {command} {'(shell)' if command.shell else ''}"
+                f"Run Step {index + 1}/{len(commands)}{' in Shell' if command.shell else ''}: {command}"
+            )
+            actual_command = (
+                command.command
+                if not command.shell else
+                str(command)
             )
             process = subprocess.Popen(
-                command.command,
+                actual_command,
                 shell=command.shell,
                 stdout=subprocess.PIPE,
                 stderr=subprocess.PIPE,
             )
             returncode = process.wait()
             stdout, stderr = process.communicate()
-            if stdout != b'':
+            if stdout:
                 self.app.logger.info(stdout.decode())
-            if stderr != b'':
+            if stderr:
                 self.app.logger.warn(stderr.decode())
             if returncode != 0 and command.raise_on_error:
                 self.app.logger.error(f"Returned {returncode} from command '{command}'")

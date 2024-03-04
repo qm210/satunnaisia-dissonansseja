@@ -65,18 +65,17 @@ class SointuCommand:
                         track_obj_file: Path, wav_exe: Path):
         # Note: When using the list based api, quotes in arguments
         # are not escaped properly. How annoying can it get?!
-        return cls(
-            [
-                crinkler_path,
-                f'/LIBPATH:"{include_dir}"',
-                f'/LIBPATH:"{win_sdk_lib_path}"',
-                wav_obj_file,
-                track_obj_file,
-                f'/OUT:{wav_exe}',
-                'Winmm.lib',
-                'Kernel32.lib',
-                'User32.lib',
-            ],
+        return cls([
+            crinkler_path,
+            f'/LIBPATH:"{include_dir}"',
+            f'/LIBPATH:"{win_sdk_lib_path}"',
+            wav_obj_file,
+            track_obj_file,
+            f'/OUT:{wav_exe}',
+            'Winmm.lib',
+            'Kernel32.lib',
+            'User32.lib',
+        ],
             shell=True,
             raise_on_error=LinkerError(f"Unable to link {wav_exe}")
         )
