@@ -27,7 +27,7 @@ class ProcessService:
             eventlet.sleep(wait_seconds)
 
     def run_if_resources_free(self, commands: List[SointuCommand], callback, callback_args):
-        self.wait_for_cpu_percent_under(60, 2)
+        self.wait_for_cpu_percent_under(60, 5)
         for index, command in enumerate(commands):
             self.app.logger.info(
                 f"Run Step {index + 1}/{len(commands)}{' in Shell' if command.enforce_escaping else ''}: {command}"
@@ -40,6 +40,10 @@ class ProcessService:
 
         with self.app.app_context():
             callback(*callback_args)
+            # self.socketio.start_background_task(
+            #     callback,
+            #     *callback_args
+            # )
 
     def run(self, commands, callback: Optional[Callable] = None, callback_args: Optional[Tuple] = None) -> Process:
         task = self.socketio.start_background_task(

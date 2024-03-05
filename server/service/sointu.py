@@ -25,16 +25,18 @@ class SointuService:
             config,
             app,
             downloader,
+            sointu_run_repository,
             process_service,
             instruments_service,
-            sointu_run_repository,
+            socket_service
     ):
         self.app = app
         self.logger = app.logger
         self.downloader = downloader
+        self.sointu_run_repository = sointu_run_repository
         self.process_service = process_service
         self.instruments_service = instruments_service
-        self.sointu_run_repository = sointu_run_repository
+        self.socket_service = socket_service
 
         root_path = Path(app.root_path).parent
         self.template_path = TemplatePath.from_config(config["templates"], root_path)
@@ -83,13 +85,19 @@ class SointuService:
 
     def finalize_sointu_run(self, temp_wav_file: Path, final_wav_file: Path, run_id: int):
         self.logger.debug(f"finalize sointu run, {temp_wav_file} -> {final_wav_file}")
-
         is_written = temp_wav_file.exists()
-        self.logger.debug(f"file written? {is_written}")
         if is_written:
             final_wav_file.parent.mkdir(parents=True, exist_ok=True)
             move(temp_wav_file, final_wav_file)
+        else:
+            self.logger.info(f"file not written: {temp_wav_file}")
         self.sointu_run_repository.update_written(run_id, is_written, final_wav_file)
+        socket_message = {
+            "status": "written" if is_written else "failed",
+            "file": final_wav_file.name,
+            "folder": final_wav_file.parent.name,
+        }
+        self.socket_service.send(socket_message, background=True)
 
     def initiate_sointu_run(self, sequence: dict, instrument_run: InstrumentRun, sample_index: int) -> None:
         sample_size = str(instrument_run.sample_size)
@@ -107,6 +115,7 @@ class SointuService:
         )
 
         run_id = self.sointu_run_repository.insert_new(temp_wav_file, instrument_run.id)
+        self.logger.debug(f"start run for {temp_wav_file}")
         self.process_service.run(
             commands,
             callback=self.finalize_sointu_run,

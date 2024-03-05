@@ -282,15 +282,26 @@ type InstrumentHeaderData = {
     startRun: () => void,
 }
 
+const stored = (key: string, defaultValue?: any) =>
+    sessionStorage.getItem(key) ?? defaultValue;
+
+const storeChanges = <T>(data: Component<T>, variable: string, key: string) => {
+    data.$watch(variable, (value: number | string) =>
+        sessionStorage.setItem(key, value.toString())
+    );
+};
+
 Alpine.data("instrumentHeader", (instrument: InstrumentConfig, fixedByUser: FixedByUserRecord): WithInit<InstrumentHeaderData> => ({
     varyingParams: 0,
     totalVariableParams: 0,
-    generateSamples: 210,
+    generateSamples: +stored("sd.generateSamples", 210),
     isPosting: false,
 
     init(this: Component<InstrumentHeaderData>) {
         this.varyingParams = currentlyVariableParametersFor(instrument, fixedByUser).length;
         this.totalVariableParams = allVariableParametersFor(instrument).length;
+
+        storeChanges(this, "generateSamples", "sd.generateSamples");
 
         // removed the checkbox for now
         const checkbox = this.$refs.variablesCheckbox as HTMLInputElement;

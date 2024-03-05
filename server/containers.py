@@ -111,7 +111,8 @@ class Container(containers.DeclarativeContainer):
         config=config,
         app=app.provided,
         downloader=downloader,
+        sointu_run_repository=sointu_run_repository,
         process_service=process_service,
         instruments_service=instruments_service,
-        sointu_run_repository=sointu_run_repository,
+        socket_service=socket_service,
     )
