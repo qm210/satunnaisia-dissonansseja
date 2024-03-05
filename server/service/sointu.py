@@ -83,7 +83,12 @@ class SointuService:
 
         return instrument_run.id
 
-    def finalize_sointu_run(self, temp_wav_file: Path, final_wav_file: Path, run_id: int):
+    def finalize_sointu_run(self,
+                            temp_wav_file: Path,
+                            final_wav_file: Path,
+                            run_id: int,
+                            instrument_run: InstrumentRun
+                            ):
         self.logger.debug(f"finalize sointu run, {temp_wav_file} -> {final_wav_file}")
         is_written = temp_wav_file.exists()
         if is_written:
@@ -92,12 +97,15 @@ class SointuService:
         else:
             self.logger.info(f"file not written: {temp_wav_file}")
         self.sointu_run_repository.update_written(run_id, is_written, final_wav_file)
+        completed = self.sointu_run_repository.get_all_for_instrument_run(instrument_run.id)
+        completed_percent = 100 * len(completed) / instrument_run.sample_size
         socket_message = {
             "status": "written" if is_written else "failed",
             "file": final_wav_file.name,
             "folder": final_wav_file.parent.name,
+            "completedPercent": completed_percent,
         }
-        self.socket_service.send(socket_message, background=True)
+        self.socket_service.send(socket_message, outside_request=True)
 
     def initiate_sointu_run(self, sequence: dict, instrument_run: InstrumentRun, sample_index: int) -> None:
         sample_size = str(instrument_run.sample_size)
@@ -119,10 +127,10 @@ class SointuService:
         self.process_service.run(
             commands,
             callback=self.finalize_sointu_run,
-            callback_args=(temp_wav_file, final_wav_file, run_id)
+            callback_args=(temp_wav_file, final_wav_file, run_id, instrument_run)
         )
 
-        # steps are planned as:
+        # QM: steps are planned as:
         # - write params config to new yaml
         # - compile run command for the sointu run
         # - let process_service start a single run - with Popen?

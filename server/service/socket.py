@@ -23,14 +23,10 @@ class SocketService:
     def on_error(self, *args, **kwargs):
         self.logger.warn("SOCKET ERROR!", args, kwargs)
 
-    def send(self, message: Union[str, dict], background: bool = False):
+    def send(self, message: Union[str, dict], outside_request: bool = False):
         # the global emit() knows the right context (i.e. which client to send the message to)
         # while self.socketio.emit() does not work that way - I trust this internet explanation for now.
-        if background:
-            self.socketio.start_background_task(
-                self.send,
-                message,
-                False
-            )
+        if outside_request:
+            self.socketio.emit("message", message)
         else:
             emit("message", message)

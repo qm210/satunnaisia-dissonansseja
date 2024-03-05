@@ -1,5 +1,5 @@
 from pathlib import Path
-from typing import Union
+from typing import Union, List
 
 from server.model.sointu_run import SointuRun, WavStatus
 
@@ -7,6 +7,15 @@ from server.model.sointu_run import SointuRun, WavStatus
 class SointuRunRepository:
     def __init__(self, session_factory):
         self.session_factory = session_factory
+
+    def get_all_for_instrument_run(self, instrument_run_id: int) -> List[SointuRun]:
+        with self.session_factory() as session:
+            return (
+                session
+                .query(SointuRun)
+                .filter(SointuRun.instrument_run_id == instrument_run_id)
+                .all()
+            )
 
     def insert(self, entity: SointuRun) -> int:
         with self.session_factory() as session:
