@@ -26,7 +26,7 @@ class Sointu:
         if isinstance(cmd, list):
             cmd = SointuCommand(cmd)
 
-        result = run(cmd.command, shell=cmd.shell, capture_output=True, text=True)
+        result = run(cmd.command, shell=cmd.enforce_escaping, capture_output=True, text=True)
         for line in result.stdout.splitlines():
             yield SointuMessage.Log(line + '\n')
 

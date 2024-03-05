@@ -1,12 +1,9 @@
-import os
-import subprocess
-
+import eventlet
 import psutil
 from multiprocessing import Process
 from typing import Optional, Callable, Tuple, List
 
 from server.sointu.sointu_command import SointuCommand
-from server.utils.math import human_readable_bytes
 
 
 class ProcessService:
@@ -19,45 +16,34 @@ class ProcessService:
         self.app = app
         self.socketio = app.config['SOCKETIO']
 
-    def check_resources(self, label: str = ""):
-        memory = psutil.virtual_memory()
-        free_memory = human_readable_bytes(memory.free)
-        self.app.logger.info(f"{label} - MEMORY FREE {free_memory}, USED {memory.percent}% ({os.cpu_count()} cores)")
+    def wait_for_cpu_percent_under(self, threshold_percent: float, wait_seconds: float) -> None:
+        while True:
+            cpu_percent = psutil.cpu_percent()
+            if cpu_percent <= threshold_percent:
+                break
+            self.app.logger.warn(
+                f"CPU USAGE {cpu_percent}% > {threshold_percent}%, wait {wait_seconds} sec."
+            )
+            eventlet.sleep(wait_seconds)
 
-    def actual_run(self, commands: List[SointuCommand], callback, callback_args):
+    def run_if_resources_free(self, commands: List[SointuCommand], callback, callback_args):
+        self.wait_for_cpu_percent_under(60, 2)
         for index, command in enumerate(commands):
             self.app.logger.info(
-                f"Run Step {index + 1}/{len(commands)}{' in Shell' if command.shell else ''}: {command}"
+                f"Run Step {index + 1}/{len(commands)}{' in Shell' if command.enforce_escaping else ''}: {command}"
             )
-            actual_command = (
-                command.command
-                if not command.shell else
-                str(command)
-            )
-            process = subprocess.Popen(
-                actual_command,
-                shell=command.shell,
-                stdout=subprocess.PIPE,
-                stderr=subprocess.PIPE,
-            )
-            returncode = process.wait()
-            stdout, stderr = process.communicate()
+            stdout, stderr, returncode = command.run_and_wait()
             if stdout:
-                self.app.logger.info(stdout.decode())
+                self.app.logger.info(stdout)
             if stderr:
-                self.app.logger.warn(stderr.decode())
-            if returncode != 0 and command.raise_on_error:
-                self.app.logger.error(f"Returned {returncode} from command '{command}'")
-                raise command.raise_on_error
+                self.app.logger.warn(stderr)
 
         with self.app.app_context():
             callback(*callback_args)
-        self.check_resources("End")  # todo: just temporary
 
     def run(self, commands, callback: Optional[Callable] = None, callback_args: Optional[Tuple] = None) -> Process:
-        self.check_resources("Start")  # todo: just temporary
         task = self.socketio.start_background_task(
-            self.actual_run,
+            self.run_if_resources_free,
             commands,
             callback,
             callback_args

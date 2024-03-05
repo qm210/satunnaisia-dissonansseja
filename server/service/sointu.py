@@ -1,7 +1,9 @@
 import string
 from copy import deepcopy
+from datetime import datetime
 from pathlib import Path
 from random import randint
+from shutil import move
 from typing import Generator, Optional
 
 from yaml import safe_load
@@ -75,44 +77,36 @@ class SointuService:
             self.logger.debug(f"Initiate Run {sample}")
             note = self.draw_random_note(instrument_run)
             sequence = self.create_sequence(instrument, note=note)
-
             self.initiate_sointu_run(sequence, instrument_run, sample)
-
-            # TODO REMOVE THIS
-            self.logger.info("Canceled run after first sample because this is the development limit for now")
-            break  # for now
 
         return instrument_run.id
 
-    def finalize_sointu_run(self, temp_wav_file: Path, wav_file: Path, run_id: int):
-        self.logger.debug(f"finalize sointu run, {temp_wav_file} -> {wav_file}")
+    def finalize_sointu_run(self, temp_wav_file: Path, final_wav_file: Path, run_id: int):
+        self.logger.debug(f"finalize sointu run, {temp_wav_file} -> {final_wav_file}")
 
         is_written = temp_wav_file.exists()
         self.logger.debug(f"file written? {is_written}")
         if is_written:
-            wav_folder = wav_file.parent
-            wav_folder.mkdir(parents=True, exist_ok=True)
-            temp_wav_file.rename(wav_file)
-        self.sointu_run_repository.update_written(run_id, is_written, wav_file)
+            final_wav_file.parent.mkdir(parents=True, exist_ok=True)
+            move(temp_wav_file, final_wav_file)
+        self.sointu_run_repository.update_written(run_id, is_written, final_wav_file)
 
     def initiate_sointu_run(self, sequence: dict, instrument_run: InstrumentRun, sample_index: int) -> None:
         sample_size = str(instrument_run.sample_size)
         padded_index = str(sample_index).zfill(len(sample_size))
-        sample_id = f"run{instrument_run.id}-{padded_index}"
+        run_folder = f"run{instrument_run.id}_{datetime.now().strftime('%Y%m%d_%H%M')}_{sample_size}"
 
-        self.logger.debug(f"prepare wav writing - for {sample_id}")
+        final_wav_file = self.wav_path / run_folder / f"{padded_index}.wav"
+        self.logger.debug(f"prepare wav writing - for {final_wav_file}")
         commands, temp_wav_file = Sointu.prepare_wav_writing(
             sequence,
             self.app.temp_path,
             self.downloader.dependencies,
             self.template_path.wav_asm,
-            "-" + sample_id,
+            f"-run{instrument_run.id}-{padded_index}"
         )
 
         run_id = self.sointu_run_repository.insert_new(temp_wav_file, instrument_run.id)
-        final_wav_file = self.wav_path / f"{sample_id}-{sample_size}.wav"
-
-        self.logger.debug("write waves inside %s", self.app.temp_path)
         self.process_service.run(
             commands,
             callback=self.finalize_sointu_run,
