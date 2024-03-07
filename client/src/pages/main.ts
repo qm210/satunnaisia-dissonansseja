@@ -5,6 +5,7 @@ import LoginPage from "./login.ts";
 import MonitorSointuPage from "./sointuMonitor.ts";
 import ExecuteSointuPage from "./testExecuteSointu.ts";
 import InstrumentsPage from "./instruments.ts";
+import MainMenu from "./mainMenu.ts";
 import { Point } from "../utils/types";
 
 
@@ -56,6 +57,11 @@ export default () => `
         class="w-full h-full"        
     >
         <template x-route="/">
+            <div class="contents">
+                ${MainMenu()}
+            </div>
+        </template>
+        <template x-route="/wav">
             <div class="contents relative">
                 ${WavFilesPage()}
                 ${NameTag()}
@@ -82,6 +88,7 @@ export default () => `
             </div>
         </template>
         <template x-route="/test-execute">
+            <!-- qm @ 2024/03/07 currently unused -->
             <div class="contents">
                 ${ExecuteSointuPage()}
             </div>        
@@ -100,7 +107,7 @@ export default () => `
 function NameTag() {
     return `
         <div
-            class="absolute bottom-6 left-6"
+            class="absolute bottom-6 left-6 bg-white px-2 py-1 border border-gray-300 cursor-pointer"
             x-data="{
                 showMenu: false,
                 menuPos: {x: 0, y: 0},
@@ -126,20 +133,16 @@ function NameTag() {
                     $router.navigate('/change-user');
                 }
             }"
-            @contextmenu="toggleMenu"
+            @click="toggleMenu"
             @contextmenu.window="showMenu = false;"     
             @click.outside="showMenu = false;"       
-            @click="showMenu = false;"
             title="Right click for more options"
         >
             <span class="select-none">
                 Username:
             </span>
-            <a
-                href="/change-user"
-                x-text="$store.user.name"
-            >
-            </a>
+            <b x-text="$store.user.name">
+            </b>
             <div
                 x-show="showMenu"
                 class="flex flex-col items-stretch p-1 gap-1"
@@ -171,15 +174,6 @@ function NameTag() {
                     <tools-icon></tools-icon>
                     <span>
                         Configure Instruments
-                    </span>
-                </button>
-                <button
-                    class="flex gap-4"
-                    @click="$router.navigate('/test-execute')"
-                >
-                    <audiofile-icon></audiofile-icon>
-                    <span>
-                        Go to Sointu Execution mode (not quite implemented yet)
                     </span>
                 </button>
             </div>
