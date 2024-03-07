@@ -150,7 +150,6 @@ class SointuService:
     def evaluate_wav_file(self, final_wav_file: Path, run_id: int) -> None:
         data, samplerate = sf.read(final_wav_file)
         max_amplitude = np.max(np.abs(data))
-        self.logger.debug(f"Max Amplitude in {final_wav_file}: {max_amplitude}")
         if max_amplitude == 0:
             wav_status = WavStatus.EqualsZero
         else:
@@ -162,7 +161,7 @@ class SointuService:
             normalized_data = data / max_amplitude
             # just overwrite the file for now, see whether this makes trouble
             sf.write(final_wav_file, normalized_data, samplerate)
-            
+
         with self.app.app_context():
             self.sointu_run_repository.update_checked(run_id, wav_status)
         self.socket_service.send({
@@ -170,6 +169,9 @@ class SointuService:
             "file": final_wav_file.name,
             "maxAmplitudeBeforeNormalization": max_amplitude
         }, outside_request=True)
+
+        self.app.logger.warn(
+            "Error: Up to now, it seems that all SointRuns to one InstrumentRun contain the same information")
 
     @staticmethod
     def draw_random_note(instrument_run):
