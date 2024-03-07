@@ -9,9 +9,9 @@ class WavStatus(Enum):
     Unfinished = "unfinished..."
     Unchecked = "unchecked..."
     # these are the checked stati:
-    Empty = "empty"
-    NearlyEmpty = "nearly-empty"
-    SeemsOk = "seems ok"
+    EqualsZero = "equals-zero"
+    BelowThreshold = "below-threshold"
+    Ok = "ok"
 
 
 class SointuRun(Base):

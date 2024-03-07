@@ -5,10 +5,12 @@ from pathlib import Path
 from random import randint
 from shutil import move
 from typing import Generator, Optional
-
 from yaml import safe_load
+import soundfile as sf
+import numpy as np
 
 from server.model.instrument_run import InstrumentRun
+from server.model.sointu_run import WavStatus
 from server.sointu.instrument import Instrument
 from server.sointu.sointu import Sointu
 from server.sointu.sointu_message import SointuMessage
@@ -83,30 +85,6 @@ class SointuService:
 
         return instrument_run.id
 
-    def finalize_sointu_run(self,
-                            temp_wav_file: Path,
-                            final_wav_file: Path,
-                            run_id: int,
-                            instrument_run: InstrumentRun
-                            ):
-        self.logger.debug(f"finalize sointu run, {temp_wav_file} -> {final_wav_file}")
-        is_written = temp_wav_file.exists()
-        if is_written:
-            final_wav_file.parent.mkdir(parents=True, exist_ok=True)
-            move(temp_wav_file, final_wav_file)
-        else:
-            self.logger.info(f"file not written: {temp_wav_file}")
-        self.sointu_run_repository.update_written(run_id, is_written, final_wav_file)
-        completed = self.sointu_run_repository.get_all_for_instrument_run(instrument_run.id)
-        completed_percent = 100 * len(completed) / instrument_run.sample_size
-        socket_message = {
-            "status": "written" if is_written else "failed",
-            "file": final_wav_file.name,
-            "folder": final_wav_file.parent.name,
-            "completedPercent": completed_percent,
-        }
-        self.socket_service.send(socket_message, outside_request=True)
-
     def initiate_sointu_run(self, sequence: dict, instrument_run: InstrumentRun, sample_index: int) -> None:
         sample_size = str(instrument_run.sample_size)
         padded_index = str(sample_index).zfill(len(sample_size))
@@ -140,6 +118,58 @@ class SointuService:
         # - also, update instrument run entry (how many files are written, how many left to go?)
         # - measure CPU performance before and during run, log in DB
         # - startup routine of server, is there some run to continue?
+
+    def finalize_sointu_run(self,
+                            temp_wav_file: Path,
+                            final_wav_file: Path,
+                            run_id: int,
+                            instrument_run: InstrumentRun
+                            ) -> None:
+        self.logger.debug(f"finalize sointu run, {temp_wav_file} -> {final_wav_file}")
+        is_written = temp_wav_file.exists()
+        if is_written:
+            final_wav_file.parent.mkdir(parents=True, exist_ok=True)
+            move(temp_wav_file, final_wav_file)
+        else:
+            self.logger.info(f"file not written: {temp_wav_file}")
+        self.sointu_run_repository.update_written(run_id, is_written, final_wav_file)
+        completed = self.sointu_run_repository.count_finished_for_instrument_run(instrument_run.id)
+        completed_percent = 100 * completed / instrument_run.sample_size
+        socket_message = {
+            "status": "written" if is_written else "failed",
+            "file": final_wav_file.name,
+            "folder": final_wav_file.parent.name,
+            "completedPercent": completed_percent,
+        }
+        self.socket_service.send(socket_message, outside_request=True)
+        self.process_service.start_task(
+            self.evaluate_wav_file,
+            (final_wav_file, run_id)
+        )
+
+    def evaluate_wav_file(self, final_wav_file: Path, run_id: int) -> None:
+        data, samplerate = sf.read(final_wav_file)
+        max_amplitude = np.max(np.abs(data))
+        self.logger.debug(f"Max Amplitude in {final_wav_file}: {max_amplitude}")
+        if max_amplitude == 0:
+            wav_status = WavStatus.EqualsZero
+        else:
+            wav_status = (
+                WavStatus.Ok
+                if max_amplitude > 0.01
+                else WavStatus.BelowThreshold
+            )
+            normalized_data = data / max_amplitude
+            # just overwrite the file for now, see whether this makes trouble
+            sf.write(final_wav_file, normalized_data, samplerate)
+            
+        with self.app.app_context():
+            self.sointu_run_repository.update_checked(run_id, wav_status)
+        self.socket_service.send({
+            "status": wav_status.value,
+            "file": final_wav_file.name,
+            "maxAmplitudeBeforeNormalization": max_amplitude
+        }, outside_request=True)
 
     @staticmethod
     def draw_random_note(instrument_run):

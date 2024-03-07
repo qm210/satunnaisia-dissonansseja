@@ -40,25 +40,27 @@ class ProcessService:
 
         with self.app.app_context():
             callback(*callback_args)
-            # self.socketio.start_background_task(
-            #     callback,
-            #     *callback_args
-            # )
 
-    def run(self, commands, callback: Optional[Callable] = None, callback_args: Optional[Tuple] = None) -> Process:
+    def run(self,
+            commands: List[SointuCommand],
+            callback: Optional[Callable] = None,
+            callback_args: Optional[Tuple] = None
+            ):
+        """
+            This is the method for external processes
+        """
         task = self.socketio.start_background_task(
             self.run_if_resources_free,
             commands,
             callback,
             callback_args
         )
-        # we do not join() on purpose, this is fire and forget
-        # ... until the callback calls back.
+        # we do not join() on purpose, this is fire and forget (... until the callback calls back.)
         return task
 
-# TODO:
-# - put the real sointu calls there
-# - let socketio emit the status
-# - return the instrument run id for the client to navigate
-# - send only these socket messages that make sense for that id
-# - try all that with a larger pool, not canceling after the first try.
+    def start_task(self, method: Callable, args: Tuple, **kwargs):
+        """
+            This is the method to pass other functions to run non-blocking.
+            Might only be a simple Adapter for now, but who knows what will change.
+        """
+        return self.socketio.start_background_task(method, *args, **kwargs)
