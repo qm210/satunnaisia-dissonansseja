@@ -342,8 +342,14 @@ export default () => `
         x-data="instruments"
         class="h-full w-full overflow-auto"
     >
-        <div class="text-lg">
+        <h2 class="flex-grow text-lg font-bold m-2">
             Instrument Definitions
+        </h2>
+        <div class="absolute top-2 right-2 px-2 py-1 border border-gray-300">
+            <a href="/wav">
+                <audiofile-icon size="16"></audiofile-icon>
+                Rate Samples
+            </a>
         </div>
         <div x-show="isLoading" class="p-8">
             <loading-icon spin="2s" size="80"></loading-icon>

@@ -95,7 +95,7 @@ export default () => `
         </template>
         <template x-route="/instruments">
             <div class="contents">
-                ${InstrumentsPage()}            
+                ${InstrumentsPage()}
             </div>
         </template>
         <template x-route="notfound" x-handler="notFound">
