@@ -348,6 +348,12 @@ export default () => `
         <div x-show="isLoading" class="p-8">
             <loading-icon spin="2s" size="80"></loading-icon>
         </div>
+        <div
+            x-show="!isLoading && Object.values(all).length === 0"
+            class="mt-4"
+        >
+            None loaded. If there are definitely template YMLs present - maybe refresh the page?
+        </div>
         <div class="flex flex-col gap-2 w-full">
             <template x-for="yml in Object.values(all)" :key="yml.id">
                 <div
