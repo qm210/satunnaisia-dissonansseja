@@ -330,6 +330,7 @@ Alpine.data("instrumentHeader", (instrument: InstrumentConfig, fixedByUser: Fixe
             })
             .catch(err => {
                 console.error(err.name, err.status, err.message);
+                alert(err.message);
             })
             .finally(() => {
                 this.isPosting = false;

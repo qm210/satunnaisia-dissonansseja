@@ -46,7 +46,7 @@ class SointuService:
 
         self.base_sequence = safe_load(self.template_path.sequence.read_text())
 
-    def create_sequence(self, instrument: Instrument, note: Optional[int] = None):
+    def create_sequence(self, instrument: Instrument, note: Optional[int] = None) -> dict:
         sequence = deepcopy(self.base_sequence)
         sequence['patch'] = [instrument.serialize(for_sointu_yml=True)] + sequence['patch']
         if len(sequence['score']['tracks']) != 1:
@@ -75,17 +75,19 @@ class SointuService:
 
     def initiate_run(self, run_json):
         instrument_run = self.instruments_service.prepare_run(run_json)
-        instrument = self.instruments_service.spawn_instrument(instrument_run)
-
-        for sample in range(instrument_run.sample_size):
-            self.logger.debug(f"Initiate Run {sample}")
+        for sample_index in range(instrument_run.sample_size):
+            instrument = self.instruments_service.spawn_instrument(instrument_run)
             note = self.draw_random_note(instrument_run)
             sequence = self.create_sequence(instrument, note=note)
-            self.initiate_sointu_run(sequence, instrument_run, sample)
+            self.initiate_sointu_run(sequence, instrument_run, sample_index)
 
         return instrument_run.id
 
-    def initiate_sointu_run(self, sequence: dict, instrument_run: InstrumentRun, sample_index: int) -> None:
+    def initiate_sointu_run(self,
+                            sequence: dict,
+                            instrument_run: InstrumentRun,
+                            sample_index: int,
+                            ) -> None:
         sample_size = str(instrument_run.sample_size)
         padded_index = str(sample_index).zfill(len(sample_size))
         run_folder = f"run{instrument_run.id}_{datetime.now().strftime('%Y%m%d_%H%M')}_{sample_size}"
@@ -100,7 +102,7 @@ class SointuService:
             f"-run{instrument_run.id}-{padded_index}"
         )
 
-        run_id = self.sointu_run_repository.insert_new(temp_wav_file, instrument_run.id)
+        run_id = self.sointu_run_repository.insert_new(temp_wav_file, instrument_run.id, sequence)
         self.logger.debug(f"start run for {temp_wav_file}")
         self.process_service.run(
             commands,
@@ -169,9 +171,6 @@ class SointuService:
             "file": final_wav_file.name,
             "maxAmplitudeBeforeNormalization": max_amplitude
         }, outside_request=True)
-
-        self.app.logger.warn(
-            "Error: Up to now, it seems that all SointRuns to one InstrumentRun contain the same information")
 
     @staticmethod
     def draw_random_note(instrument_run):

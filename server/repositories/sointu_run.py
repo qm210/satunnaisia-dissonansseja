@@ -24,10 +24,11 @@ class SointuRunRepository:
             session.commit()
             return entity.id
 
-    def insert_new(self, wav_file: Union[str, Path], instrument_run_id: int) -> int:
+    def insert_new(self, wav_file: Union[str, Path], instrument_run_id: int, sequence: dict) -> int:
         sointu_run = SointuRun(
             wav_file=str(wav_file),
             instrument_run_id=instrument_run_id,
+            sequence=sequence,
             execution_log=f"Started {wav_file}.\n",
             wav_status=WavStatus.Unfinished.value
         )
