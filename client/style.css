@@ -596,6 +596,14 @@ video {
   top: 0.5rem;
 }
 
+.top-6 {
+  top: 1.5rem;
+}
+
+.right-6 {
+  right: 1.5rem;
+}
+
 .z-10 {
   z-index: 10;
 }
@@ -679,6 +687,14 @@ video {
 
 .w-full {
   width: 100%;
+}
+
+.w-8 {
+  width: 2rem;
+}
+
+.w-32 {
+  width: 8rem;
 }
 
 .flex-1 {
@@ -792,8 +808,8 @@ video {
   overflow-x: auto;
 }
 
-.overflow-y-hidden {
-  overflow-y: hidden;
+.overflow-y-auto {
+  overflow-y: auto;
 }
 
 .truncate {

@@ -1,6 +1,7 @@
 import { Component, Rating, TaggedFileGroup, WithInit } from "../types";
 import Alpine from "alpinejs";
 import { getUserName, ratingsStore } from "../initStores.ts";
+import NameTagMenu from "../components/nameTagMenu.ts";
 
 const labelledCount = (count: any[] | string | number, singular: string, plural?: string) => {
     plural ??= singular + "s";
@@ -122,82 +123,85 @@ Alpine.data("wavFiles", (): WithInit<WavFilesData> => ({
     }
 }));
 
-export default () => `
-    <div
-        class="flex flex-col w-full h-full"
-        x-data="wavFiles"
-    >
+export default () => {
+    return `
+        ${NameTagMenu()}
         <div
-            x-show="$store.ratings.unsaved.length > 0"
-            class="flex-end flex items-center border border-black p-1 m-2 shadow-md"
+            class="flex flex-col w-full h-full"
+            x-data="wavFiles"
         >
             <div
-                x-show="isSubmitting"
-                class="flex-grow justify-self-center p-2"
+                x-show="$store.ratings.unsaved.length > 0"
+                class="flex-end flex items-center border border-black p-1 m-2 shadow-md"
             >
-                <loading-icon spin="2s"></loading-icon>
+                <div
+                    x-show="isSubmitting"
+                    class="flex-grow justify-self-center p-2"
+                >
+                    <loading-icon spin="2s"></loading-icon>
+                </div>
+                <a
+                    href="/unsaved"
+                    x-show="!isSubmitting"
+                    class="flex-grow text-lg cursor-pointer"
+                    x-text="labelledCount($store.ratings.unsaved, 'Unsaved Rating')"
+                >
+                </a>
+                <div
+                    x-show="!isSubmitting" 
+                    class="flex-end"
+                >
+                    <button @click="submit()">
+                        <save-icon color="darkgreen"></save-icon>                
+                    </button>
+                    <button @click="discard()">
+                        <trash-icon></trash-icon>
+                    </button>
+                </div>
             </div>
-            <a
-                href="/unsaved"
-                x-show="!isSubmitting"
-                class="flex-grow text-lg cursor-pointer"
-                x-text="labelledCount($store.ratings.unsaved, 'Unsaved Rating')"
-            >
-            </a>
-            <div
-                x-show="!isSubmitting" 
-                class="flex-end"
-            >
-                <button @click="submit()">
-                    <save-icon color="darkgreen"></save-icon>                
-                </button>
-                <button @click="discard()">
-                    <trash-icon></trash-icon>
-                </button>
+            <div class="flex-grow h-full flex flex-col overflow-y-auto">
+                <h3 x-show="isLoading">
+                    Loading...
+                </h3>
+                <div class="flex-grow w-full">
+                    <table class="w-full flex-grow">
+                    <tbody>
+                        <template x-for="taggedGroup in unratedGroups">
+                        <tr class="align text-lg">
+                            <td
+                                x-text="taggedGroup.tag || 'UNTAGGED'"
+                                class="sticky left-0 p-4 text-left bg-white truncate"
+                            />
+                            <td
+                                class="sticky left-24 bg-white"
+                                >
+                                <button
+                                    small
+                                    @click="startQueue(taggedGroup)"
+                                    title="Play as queue"
+                                >
+                                    <play-icon></play-icon>
+                                </button>
+                            </td>
+                            <td
+                                class="p-2 overflow-x-auto"
+                            >
+                                <div class="flex space-x-4">
+                                    <template x-for="file in taggedGroup.files">
+                                        <a
+                                            x-bind:href="'/wav/' + file.path"
+                                            x-text="file.name"
+                                            class="underline"
+                                        />
+                                    </template>
+                                </div>
+                            </td>
+                        </tr>
+                        </template>
+                    </tbody>
+                    </table>
+                </div>
             </div>
         </div>
-        <div class="flex-grow h-full flex flex-col overflow-y-hidden">
-            <h3 x-show="isLoading">
-                Loading...
-            </h3>
-            <div class="flex-grow w-full">
-                <table class="w-full flex-grow">
-                <tbody>
-                    <template x-for="taggedGroup in unratedGroups">
-                    <tr class="align text-lg">
-                        <td
-                            x-text="taggedGroup.tag || 'UNTAGGED'"
-                            class="sticky left-0 p-4 text-left bg-white truncate"
-                        />
-                        <td
-                            class="sticky left-24 bg-white"
-                            >
-                            <button
-                                small
-                                @click="startQueue(taggedGroup)"
-                                title="Play as queue"
-                            >
-                                <play-icon></play-icon>
-                            </button>
-                        </td>
-                        <td
-                            class="p-2 overflow-x-auto"
-                        >
-                            <div class="flex space-x-4">
-                                <template x-for="file in taggedGroup.files">
-                                    <a
-                                        x-bind:href="'/wav/' + file.path"
-                                        x-text="file.name"
-                                        class="underline"
-                                    />
-                                </template>
-                            </div>
-                        </td>
-                    </tr>
-                    </template>
-                </tbody>
-                </table>
-            </div>
-        </div>
-    </div>
-`;
+    `;
+};

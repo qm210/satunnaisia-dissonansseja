@@ -1,5 +1,5 @@
 from pathlib import Path
-from typing import Union, List
+from typing import Union, List, Optional
 
 from server.model.sointu_run import SointuRun, WavStatus
 
@@ -43,11 +43,13 @@ class SointuRunRepository:
                 entity.wav_file = str(wav_filename)
             session.commit()
 
-    def update_checked(self, id: int, wav_status: WavStatus):
+    def update_checked(self, id: int, wav_status: WavStatus, length: Optional[int] = None):
         with self.session_factory() as session:
             entity = session.query(SointuRun).get(id)
             if not entity.wav_written:
                 raise ValueError("Cannot update_checked() a SointuRun with no wav_written!")
             entity.wav_checked = True
             entity.wav_status = wav_status.value
+            if length is not None:
+                entity.length = length
             session.commit()

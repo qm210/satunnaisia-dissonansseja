@@ -1,7 +1,7 @@
 import random
 
 
-def mixed_random_between_uniform_and_triangular(lower_bound, upper_bound, pivot):
+def mixed_random_between_uniform_and_triangular(lower_bound, upper_bound, pivot) -> int:
     """
     This is the skewed random distribution I thought of (for no better idea)
     you select a range and another single value, the pivot.
@@ -21,7 +21,7 @@ def mixed_random_between_uniform_and_triangular(lower_bound, upper_bound, pivot)
     else:
         triangular = 0
         mix = 1
-    return mix * uniform + (1 - mix) * triangular
+    return round(mix * uniform + (1 - mix) * triangular)
 
 
 def human_readable_bytes(num, suffix="B"):

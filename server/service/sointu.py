@@ -15,6 +15,7 @@ from server.sointu.instrument import Instrument
 from server.sointu.sointu import Sointu
 from server.sointu.sointu_message import SointuMessage
 from server.utils.dataclasses import TemplatePath
+from server.utils.wav import trim_trailing_silence
 
 
 class SointuService:
@@ -150,26 +151,32 @@ class SointuService:
         )
 
     def evaluate_wav_file(self, final_wav_file: Path, run_id: int) -> None:
-        data, samplerate = sf.read(final_wav_file)
-        max_amplitude = np.max(np.abs(data))
+        original_wav, samplerate = sf.read(final_wav_file)
+        original_length = len(original_wav) / samplerate
+        max_amplitude = np.max(np.abs(original_wav))
         if max_amplitude == 0:
             wav_status = WavStatus.EqualsZero
+            actual_length = 0
         else:
             wav_status = (
                 WavStatus.Ok
                 if max_amplitude > 0.01
                 else WavStatus.BelowThreshold
             )
-            normalized_data = data / max_amplitude
+            trimmed_wav = trim_trailing_silence(original_wav)
+            actual_length = len(trimmed_wav) / samplerate
+            normalized_wav = trimmed_wav / max_amplitude
             # just overwrite the file for now, see whether this makes trouble
-            sf.write(final_wav_file, normalized_data, samplerate)
+            sf.write(final_wav_file, normalized_wav, samplerate)
 
         with self.app.app_context():
-            self.sointu_run_repository.update_checked(run_id, wav_status)
+            self.sointu_run_repository.update_checked(run_id, wav_status, length=actual_length)
         self.socket_service.send({
             "status": wav_status.value,
             "file": final_wav_file.name,
-            "maxAmplitudeBeforeNormalization": max_amplitude
+            "maxAmplitudeBeforeNormalization": round(max_amplitude, 3),
+            "actualLength": round(actual_length, 2),
+            "originalLength": round(original_length, 2),
         }, outside_request=True)
 
     @staticmethod
